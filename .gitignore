@@ -47,3 +47,5 @@ dist/
 .vercel/
 .claude/capture-state/
 .claude/settings.local.json
+
+!.env.example
