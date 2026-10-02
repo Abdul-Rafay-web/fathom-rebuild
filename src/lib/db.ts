@@ -15,11 +15,12 @@ export const sql =
   g.__sql ??
   postgres(process.env.DATABASE_URL!, {
     prepare: false,
-    max_pipeline: 1,
     max: 6,
     idle_timeout: 20,
     connect_timeout: 15,
     onnotice: () => {},
+    // Supported by the driver at runtime but missing from its type definitions.
+    ...({ max_pipeline: 1 } as object),
   });
 
 if (process.env.NODE_ENV !== 'production') g.__sql = sql;

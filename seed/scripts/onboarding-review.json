@@ -1,0 +1,599 @@
+{
+ "slug": "onboarding-review",
+ "title": "Onboarding redesign review",
+ "truth": {
+  "decisions": {
+   "d1": "Drop the notification-settings step from the onboarding checklist.",
+   "d2": "The success metric is time to first full scheduled week, target 3 days, down from 9."
+  },
+  "actions": {
+   "a1": {
+    "owner": "Tom Becker",
+    "text": "Add spreadsheet import as the first checklist step",
+    "due": "Monday"
+   },
+   "a2": {
+    "owner": "Lena Novak",
+    "text": "Make sample data local-only so it never syncs",
+    "due": "next sprint"
+   },
+   "a3": {
+    "owner": "Priya Raman",
+    "text": "Set up tracking for time to first scheduled week",
+    "due": "before launch"
+   }
+  }
+ },
+ "lines": [
+  {
+   "speaker": "Priya Raman",
+   "text": "Thanks for jumping on, everyone. Let's dive straight in. We are at forty-six active accounts now, sitting right around two point one million in ARR, but our time-to-first-value metric for new dispatchers is still dragging us down. Right now, it takes a new dispatcher an average of nine days from sign-up to schedule their first full week of work for their crew. That is way too slow for a field-service tool. Tom, you have got the new onboarding checklist prototype ready to walk through?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Yeah, thanks Priya. I have been working on this for the past two weeks after sitting in on three customer shadowing calls with Marcus. I will share my screen now. What you are looking at here is the main dispatcher dashboard, but for any account less than thirty days old or with incomplete setup, we inject this floating checklist panel on the right side of the screen.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "That layout looks clean, Tom. Already much clearer than the old floating modal we tested back in April.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Thanks Marcus. So the core strategy here is breaking the setup into six manageable steps, backed by a persistent progress bar at the top that explicitly tracks their journey toward publishing their first full week. Step one is basic company profile and working hours. Step two is adding your technicians and skills. Step three is where things get interesting: it is an interactive sandbox mode pre-loaded with sample data.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Hold on, sample data on the dispatcher dashboard?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Exactly. One big issue we saw during shadowing is that dispatchers are terrified of breaking their active calendar or sending accidental SMS alerts to real field techs while they are still figuring out drag-and-drop scheduling. So step three spins up three fake technicians—let's call them Bob, Sarah, and Mike—and five dummy jobs like AC repair or pipe leak. The dispatcher can drag, reassign, filter, and resolve conflicts in a totally safe sandbox environment without touching live dispatch tables.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "I love the concept of reducing anxiety, Tom, but what is the actual completion criteria for step three? How do we know when a user has practiced enough to move to step four?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "We prompt them to schedule at least three sample jobs and assign a time window. Once they do those three actions, a banner pops up saying, 'You have got the basics down! Ready to load your actual team?' Then step four guides them through adding their real technicians. Step five is creating their first three live jobs. Step six is hitting the 'Publish Week' button, which triggers our automated notification engine for the crew.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "I need to jump in on step four, Tom. Adding technicians. How are we handling that step in the prototype right now? Is it just a single-form input where they type names and phone numbers one by one?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Right now, yeah. It is a modal where you type the technician's first name, last name, phone number, primary trade skill, and home base ZIP code, then click 'Add another'.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "Okay, so that is going to be an immediate roadblock for more than half our pipeline. I pulled the CS ticket data from last month. Out of ninety-four onboarding support tickets logged in Zendesk under tag onboarding-blocker, thirty-six of them—that is over thirty-eight percent—were dispatchers asking how to bulk import technicians from an Excel sheet or CSV file.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Thirty-eight percent is huge.",
+   "overlap": true
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "Exactly, Lena. These dispatchers are coming off legacy systems like ServiceTitan or just messy Excel workbooks where they have twenty, thirty, or forty techs listed. If we make a dispatcher at a thirty-tech HVAC fleet type forty names, phone numbers, and skill tags one by one into a form, they will abandon the checklist right at step four.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Marcus is totally right. Tom, can we integrate a CSV upload flow directly into step four? What would that look like visually?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "We can definitely add a drop zone for CSV files in that step. I actually drafted a quick secondary wireframe for a mapping drawer where they map columns like 'Tech Name' to our system fields. But my concern with adding CSV import to step four is that data validation errors might stall them even longer. If their spreadsheet has improperly formatted phone numbers or duplicate emails, they get stuck in error resolution mode.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "But they are already stuck! Ticket four-zero-two last Tuesday was a dispatcher from Apex Plumbing who spent three hours trying to manually enter twenty-four field workers, got frustrated, and logged off. Their onboarding call was delayed by four days. If we offer a clean CSV template download inside step four with auto-column mapping, it cuts that friction down immensely.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "From an engineering perspective, CSV parsing on the web front-end isn't hard, but I have a much bigger red flag regarding step three, Tom.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "What is the flag, Lena?",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "The sample data sandbox. You mentioned it populates fake technicians and dummy jobs on the calendar. Where are those records stored in the database?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "I was assuming they would just be flagged with an sample flag boolean in the regular database tables so they render on the UI like normal records.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Absolutely not. That is a landmine for mobile offline sync.",
+   "overlap": true
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Wait, why? If they are scoped to the account, doesn't the web app just filter them out when sandbox mode is toggled off?",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "No, because of how our field tech mobile app works. Remember, our mobile architecture relies on local SQLite database sync so techs can operate in offline mode in basements, elevator shafts, or rural sites without cell service. When a dispatcher creates a job record in the system—even if it has a sample flag set to true—if that record hits the main backend sync pipeline, it gets pushed down to the mobile clients associated with that company account.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Wait, so a real field technician could see a fake sample job on their phone while working in a basement?",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Worse. If the sync logic doesn't strictly isolate sandbox records at the database engine level, an offline mobile client syncing after re-establishing connectivity could attempt to merge or update local offline changes against sample jobs, causing sync conflicts or even pushing dummy jobs into real crew schedules. We cannot let sample data anywhere near the production sync tables. It needs to live entirely in local browser storage on the web client or inside an isolated ephemeral memory store that never touches the mobile sync engine.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Wow, okay. I definitely didn't appreciate the offline sync implications. I just thought of sample data as a simple front-end toggle.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Front-end toggles are how field technicians end up driving forty miles to fix a fake AC unit in Bob's imaginary house.",
+   "overlap": true
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Fair point, Lena. So if we keep sample data strictly in local browser state—like IndexedDB or state memory—can we still allow the dispatcher to interact with the scheduling calendar seamlessly?",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Yes, as long as the scheduling UI components can consume a mock state provider when sandbox mode is active, without making POST requests to the main API endpoints that feed the sync engine. That is totally doable on the web front end, but we need to specify that boundary clearly in the architecture spec.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Good catch, Lena. That is exactly why we bring engineering into design reviews early. Now, I want to step back and look at the broader numbers and goals for this checklist project. Tom, Marcus, and Lena, let's talk about success metrics. Right now, our benchmark is nine days to first full week scheduled. What is our target metric once this checklist is deployed? My target is getting that nine-day average down to three days or less for accounts with under twenty technicians, and under five days for larger fleets.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "Three days would be huge for CS.",
+   "overlap": true
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "Honestly, if we hit three days, our team could shift from doing manual handheld onboarding calls to proactive check-ins focused on upsells and add-on modules. Right now, CS spends roughly forty percent of its bandwidth just walking new dispatchers through basic calendar setup and technician creation.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Let's break down how the checklist progress bar incentivizes that speed. When a new dispatcher logs in, the progress bar shows zero percent complete with an estimated time to complete of fifteen minutes. As they complete steps, the bar turns green, and we show micro-copy like 'Step three of six: You are halfway to dispatching your first week!'",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Micro-copy is great, Tom, but how do we handle multi-user dispatch teams? In about twenty percent of our forty-six accounts, there isn't just one dispatcher; there is a primary operations manager who signs up the company, and then two or three junior dispatchers who actually do the daily scheduling. Who sees the checklist?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "That is a crucial point. In the current design, the checklist state is tracked at the account level, not the individual user level. So if Admin Sarah completes steps one through three, when Dispatcher John logs in ten minutes later, he sees steps one through three already checked off with a note saying 'Completed by Sarah'.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "I really like that context sharing. But what happens if John logs in while Sarah is still in step three sample mode? Does John see the sample jobs on his web screen too?",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "If sample data is stored in local browser memory like we just discussed, John wouldn't see Sarah's local sample state unless we sync sandbox states through a backend websocket or session store, which adds unnecessary complexity.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Is local storage per user browser fine for sandbox mode then?",
+   "overlap": true
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Yes, keeping sandbox state isolated per browser session is actually safer and much easier to build. Sarah plays with sample data on her laptop, John plays with sample data on his desktop, and neither pollutes the other's view or the backend database.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "That makes total sense. Let's make sure we document that explicitly. Now, back to the six steps. Tom, walk us through step five and step six in detail. What happens when they click 'Publish Week'?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Sure. Step five is 'Create Real Jobs'. We prompt the user to add at least five real work orders to their schedule for the upcoming week. Once five jobs are created on the board, step six unlocks: 'Publish First Week'. When they click 'Publish First Week', a modal pops up summarizing the schedule—for example, 'Twelve jobs assigned across four technicians for the week of October fourteenth'. It has a primary CTA button that says 'Publish and Send Mobile Alerts'.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "What happens if they haven't assigned all the jobs yet? What if three jobs are still in the unassigned sidebar pool?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Good question. The confirmation modal highlights unassigned jobs with a soft amber warning badge: 'Three jobs are unassigned. Unassigned jobs will not generate notifications for technicians until assigned.' It doesn't block them from publishing the rest of the schedule, but it makes sure they are aware.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "We shouldn't block publishing on unassigned jobs.",
+   "overlap": true
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Right, because in field service, dispatchers often keep a pool of unassigned standby jobs on the board for emergency call-outs during the week. Blocking publish because of unassigned items would frustrate experienced dispatchers.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "Exactly. We had ticket three-eight-nine last month where a customer couldn't figure out why their batch dispatch failed, and it turned out our legacy system required every job to have a technician assigned before finalizing the week. They hated that.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "When they click 'Publish and Send Mobile Alerts', what is the actual payload we send to the mobile backend? Are we sending push notifications immediately to all assigned technicians for all those jobs at once?",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "That is what the current workflow does, right?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "That was my assumption. Push notification plus an in-app work order update for each tech on the schedule.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "We need to be careful with push notification batching here. If a dispatch manager publishes a full weekly schedule for thirty technicians with eighty total jobs, firing eighty individual push notifications simultaneously can hit rate limits or trigger notification spam on the technicians' phones. We should aggregate them into a single notification per tech: 'Your schedule for next week is ready: four jobs assigned.'",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "Oh, technicians will definitely appreciate that. Nobody wants their phone buzzing twenty times in ten seconds while they are driving a work truck.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "That makes total sense. I will update the modal copy to say 'Technicians will receive a summary alert of their assigned schedule' instead of individual job alerts.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Excellent. Let's talk about the checklist persistence and dismissal logic. What if a tech-savvy dispatcher comes in, sets up their account, knows exactly what they are doing, and finds the onboarding checklist panel annoying? Can they dismiss or minimize it?",
+   "overlap": true
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "In our early beta testing last quarter, users closed the welcome tour accidentally while trying to close a notification, and then spent twenty minutes hunting through settings trying to get it back.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "In the top right corner of the checklist card, there is a minimize chevron that collapses the checklist down to a small sticky badge at the bottom right corner showing just the percentage indicator—like 'Checklist: sixty-six percent'. There is also a 'Dismiss Checklist' option in a drop-down menu. But if they click dismiss, we show a quick confirmation.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Keeping the collapsed pill visible until completion is a great middle ground. Now, let's address the timing and scope. We are aiming to launch this onboarding overhaul before the Q4 sales push in mid-November. Lena, given what we have discussed about keeping sandbox state local to the browser and adding bulk CSV technician import, what does the engineering scope look like?",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "The front-end checklist UI with local browser state for sandbox mode is relatively straightforward—maybe two sprints for one front-end engineer. The CSV importer for technician bulk upload is where the meat is. We will need solid column mapping UI, schema validation, and error reporting for duplicate phone numbers or malformed emails. If we use an off-the-shelf React CSV parser component, we can probably ship the whole package in three two-week sprints.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Three sprints puts us right at late October for QA and internal testing, which aligns perfectly with our mid-November rollout deadline before the big commercial push.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "That timeline works really well for Customer Success too. It gives my team two weeks to update our help center articles and record new screen walkthrough videos showing the six-step checklist and CSV import template.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "I can have the revised high-fidelity Figma mocks for the CSV importer drawer and the aggregated notification copy ready by Thursday's design sync.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Great. Before we move into the second part of our agenda—where we will review the technician mobile app setup wizard and how sync status is communicated during initial login—let's do a quick recap of the design changes we agreed on for the dispatcher checklist.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Right, so let's look closely at the specific steps currently in Tom's prototype before we finalize the flow. Right now, Tom, you have six items listed in the sidebar checklist.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Yeah, exactly. Step one is company profile setup, step two is adding technicians, step three is configuring notification settings, step four is creating a sample job, step five is scheduling your first full week, and step six is inviting secondary dispatchers.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "Step three is where I think we lose people. I look at our support tickets every week, and new dispatchers get totally bogged down in notification rules.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "They start worrying about SMS credits, who gets emailed when a job changes, and whether technicians will get alerted at six in the morning. They get stuck in settings before they've even built a schedule.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Yeah, nobody gets excited about push notification thresholds on day one. They just want to see their technicians on a calendar view.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "I agree. Notification preferences are important for long-term retention, but they aren't part of getting to core value. Let's make an explicit decision here. We drop the notification-settings step from the onboarding checklist entirely and move those defaults to system settings.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Wait, if we remove it, won't dispatchers be worried that publishing a schedule will instantly start pinging their guys without them knowing the rules?",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "We can address that with sensible defaults and a quick banner in the scheduling step itself, like 'Notifications are set to standard daily summary mode.' That reassures them without dragging them into a five-page sub-menu.",
+   "overlap": true
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Okay, that makes sense. I can live with cutting it from the primary sequence.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Great. So the decision is official: drop the notification-settings step from the onboarding checklist.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Gladly. That reduces my front-end form state validation headache by at least thirty percent.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Now, let's talk about what should actually be the very first action a new dispatcher takes when they open the dashboard.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "It has to be getting their technician list into the system. Right now, our average new account has between eight and twenty-five field technicians. Manually typing twenty tech names, phone numbers, and trade certifications takes forty-five minutes.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "In the current prototype, I put technician creation as step two after basic company info. But if we use the bulk CSV template we discussed earlier, we can make that step zero, right at the start.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Exactly. Importing that team roster instantly populates the dispatch board with real names instead of blank rows. Tom, can you handle updating the checklist order?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Yes, absolutely. I will add spreadsheet import as the first checklist step, due Monday.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Perfect, Monday works for the wireframe revision.",
+   "overlap": true
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "While we are on the topic of getting data onto the board, I want to bring up the sample data logic again. Tom's wireframe shows a 'Load Sample Fleet' toggle so dispatchers can play around with fake jobs.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Right, it loads five fake HVAC technicians and twelve mock jobs in a suburban area so they can drag and drop jobs right away without ruining their real operational data.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Which is great for desktop exploration, but here is my technical concern: Tidewater's architecture relies on local SQLite databases on the mobile app for offline sync. If sample data touches our backend sync queue, those fake jobs will push down to actual field technicians' phones when they log in.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "Oh, man. Imagine a real tech working in a basement in rural Pennsylvania suddenly seeing three fake emergency calls for 'John Doe' pop up on his offline job list.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Exactly. It would pollute the offline storage engines and cause massive synchronization confusion when connection drops.",
+   "overlap": true
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "So how do we isolate sandbox data?",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "We keep all sample data strictly inside browser session storage. It never touches PostgreSQL, and it never touches the WebSocket sync service. I will make sample data local-only so it never syncs, due next sprint.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Awesome. Thanks, Lena. That avoids a huge operational risk.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "I can't emphasize enough how much customer success will benefit from that. Our biggest churn trigger in the first thirty days is onboarding confusion. If dispatchers can play safely in a local sandbox without broadcast errors, confidence goes way up.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "It also lets me design a much cleaner sandbox indicator banner across the top of the UI—something like 'You are in Sandbox Mode. Changes here will not affect mobile apps.'",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Love that. Now, let's step back and talk about our overarching target for this entire initiative. We need to align on the core success metric for this checklist redesign.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "Right now, across our forty-six active accounts, the baseline is pretty painful. On average, a new dispatcher takes nine full calendar days from signing their contract to scheduling their first full weekly dispatch board.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Nine days is way too long for a SaaS product selling to field services. They're paying monthly subscriptions, and for the first week and a half, they're still managing jobs on whiteboards or Excel.",
+   "overlap": true
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Precisely. The entire point of this simplified flow, CSV import, and isolated sandbox is to drastically shrink that setup latency. Based on our cohort analysis, if a customer schedules a full week within three days, their ninety-day expansion rate increases by forty percent.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "Three days is very realistic if the CSV import works smoothly and they don't get stuck in settings.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "So let's establish that as our primary key performance indicator. The success metric is time to first full scheduled week, target 3 days, down from 9.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Agreed. That gives design a very clear benchmark for measuring drop-off between steps.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Sounds good to me. From an engineering perspective, how are we defining 'full scheduled week' in the telemetry?",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "It should mean at least five active technicians assigned to at least fifteen total work orders spread across five consecutive business days.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Yes, that's a solid threshold. It proves they aren't just testing one job on a Monday; they are actually operating their dispatch hub on Tidewater.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "To make sure we can measure this accurately, I will take ownership of the analytics infrastructure for it. I will set up tracking for time to first scheduled week, due before launch.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Nice. Will you be using standard Mixpanel funnel events for each checklist step?",
+   "overlap": true
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Yeah, Mixpanel combined with backend event triggers from the database when a batch schedule publish action completes.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Just make sure the analytics client doesn't block offline operations on mobile when tech leads test dispatcher functions on their tablets.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Good call. I'll ensure all telemetry calls are queued asynchronously and fail silently without throwing UI alerts.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "This feels like a huge step forward compared to the prototype we reviewed last month. The flow is way tighter, and we are removing friction right where customers usually stumble.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "I'm feeling much better about the timeline now too. By trimming the notification step, I can turn around the updated Figma files super quickly.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Let's review our action items to wrap up this portion of the agenda.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Tom, you have updating the checklist flow in Figma to place spreadsheet import as step one, due Monday.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Got it. I'll also update the drawer designs and the aggregated notification warning copy.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Lena, you have making sample data local-only to prevent offline sync conflicts, due next sprint.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Yep, session storage isolation. I'll kick off the task card in Jira today.",
+   "overlap": true
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "And I will set up tracking for time to first scheduled week, due before launch, tracking our target move from nine days down to three.",
+   "overlap": false
+  },
+  {
+   "speaker": "Marcus Reid",
+   "text": "And my team will draft the updated help center documentation and new walkthrough videos based on Tom's Monday wireframes.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Fantastic progress today, everyone. Let's take a quick five-minute break, grab some coffee, and then dive into part two: the technician mobile app setup wizard and offline sync status indicators.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Coffee sounds great. I'm ready to talk about SQLite sync locks whenever you all are.",
+   "overlap": false
+  }
+ ]
+}
