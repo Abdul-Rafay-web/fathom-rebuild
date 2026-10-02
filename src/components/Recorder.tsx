@@ -10,7 +10,8 @@ import { Button, cx, Kbd } from './ui';
 import { toast } from './toast';
 
 type Phase = 'idle' | 'starting' | 'recording' | 'saving' | 'error';
-type Line = { text: string; final: boolean; speaker?: number; at: number };
+// A paragraph of finalized caption text, plus the live (interim) tail being spoken now.
+type Para = { text: string; at: number; speaker?: number; last: number };
 type LiveItem = { text: string; owner: string; due: string; at: number };
 
 const MAX_BUFFERED = 256 * 1024; // backpressure threshold on the socket
@@ -31,7 +32,8 @@ export function Recorder() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [title, setTitle] = useState('');
   const [elapsed, setElapsed] = useState(0);
-  const [lines, setLines] = useState<Line[]>([]);
+  const [paras, setParas] = useState<Para[]>([]);
+  const [interim, setInterim] = useState('');
   const [captions, setCaptions] = useState<'connecting' | 'live' | 'off'>('connecting');
   const [items, setItems] = useState<LiveItem[]>([]);
   const [marks, setMarks] = useState<{ start_ms: number; end_ms: number }[]>([]);
@@ -54,7 +56,7 @@ export function Recorder() {
   const scroller = useRef<HTMLDivElement>(null);
 
   useEffect(() => { pendingSessions().then(setPending); }, []);
-  useEffect(() => { scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: 'smooth' }); }, [lines]);
+  useEffect(() => { scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: 'smooth' }); }, [paras, interim]);
 
   const now = () => performance.now() - t0.current;
 
@@ -86,12 +88,21 @@ export function Recorder() {
         const alt = m.channel?.alternatives?.[0];
         const text: string = alt?.transcript ?? '';
         if (!text) return;
-        const speaker = alt.words?.[0]?.speaker;
-        setLines((ls) => {
-          const base = ls.length && !ls[ls.length - 1].final ? ls.slice(0, -1) : ls; // replace the interim in place
-          return [...base, { text, final: !!m.is_final, speaker, at: now() }];
+        const speaker: number | undefined = alt.words?.[0]?.speaker;
+        if (!m.is_final) { setInterim(text); return; }
+        // Final text joins the current paragraph unless the speaker changed or
+        // there was a real pause (>2 s): captions read as prose, not fragments.
+        const t = now();
+        setInterim('');
+        setParas((ps) => {
+          const last = ps[ps.length - 1];
+          if (last && last.speaker === speaker && t - last.last < 2_000) {
+            return [...ps.slice(0, -1), { ...last, text: `${last.text} ${text}`, last: t }];
+          }
+          return [...ps, { text, at: t, speaker, last: t }];
         });
-        if (m.is_final) { finals.current.push({ text, at: now() }); maybeInsights(); }
+        finals.current.push({ text, at: t });
+        maybeInsights();
       };
       ws.current = sock;
     } catch {
@@ -129,9 +140,14 @@ export function Recorder() {
     tick();
   };
 
+  const audioCtx = useRef<AudioContext | null>(null);
   const start = async () => {
     setErr(null);
     setPhase('starting');
+    // Browsers only let an AudioContext run if it's created during the click.
+    // Creating it after awaiting mic permission left it suspended: a flat meter.
+    const ctx = new AudioContext();
+    audioCtx.current = ctx;
     try {
       const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       stream.current = s;
@@ -153,7 +169,7 @@ export function Recorder() {
         flush();
       };
       r.start(250);
-      const ctx = new AudioContext();
+      if (ctx.state !== 'running') await ctx.resume().catch(() => {});
       const an = ctx.createAnalyser();
       an.fftSize = 1024;
       ctx.createMediaStreamSource(s).connect(an);
@@ -161,6 +177,7 @@ export function Recorder() {
       connectCaptions(meta.mime);
       setPhase('recording');
     } catch (e) {
+      ctx.close().catch(() => {});
       setPhase('error');
       setErr(e instanceof DOMException && e.name === 'NotAllowedError' ? 'Microphone access was blocked. Allow it in the address bar and try again.' : 'Couldn’t start the microphone.');
     }
@@ -199,6 +216,7 @@ export function Recorder() {
     const meta = session.current;
     if (!r || !meta) return;
     cancelAnimationFrame(raf.current);
+    audioCtx.current?.close().catch(() => {});
     const duration = now();
     await new Promise<void>((res) => { r.onstop = () => res(); r.stop(); });
     stream.current?.getTracks().forEach((t) => t.stop());
@@ -292,20 +310,22 @@ export function Recorder() {
           <div ref={scroller} className="flex-1 overflow-y-auto px-6 py-5">
             {phase === 'idle' && <p className="pt-16 text-center font-serif text-[18px] text-ink-3">Press the button and start talking. Words appear here as you speak.</p>}
             {phase === 'starting' && <p className="pt-16 text-center text-[14px] text-ink-3">Waiting for microphone permission…</p>}
-            {recording && captions === 'off' && lines.length === 0 && (
+            {recording && captions === 'off' && paras.length === 0 && (
               <p className="pt-16 text-center text-[13.5px] text-ink-3">
                 <span className="pulse-dot mr-2 inline-block h-2 w-2 rounded-full bg-danger align-middle" />
                 Recording. Live captions are unavailable right now; the full transcript and notes are ready a minute after you stop.
               </p>
             )}
-            {recording && captions === 'connecting' && lines.length === 0 && <p className="pt-16 text-center text-[13.5px] text-ink-3">Connecting live captions…</p>}
-            <div className="space-y-2.5">
-              {lines.map((l, i) => (
-                <p key={i} className={cx('font-serif text-[16.5px] leading-relaxed', l.final ? 'text-ink' : 'text-ink-3 italic')}>
-                  <span className="mr-2 font-mono text-[11px] text-ink-3 not-italic">{clock(l.at)}</span>
-                  {l.text}
+            {recording && captions === 'connecting' && paras.length === 0 && <p className="pt-16 text-center text-[13.5px] text-ink-3">Connecting live captions…</p>}
+            <div className="space-y-4">
+              {paras.map((p, i) => (
+                <p key={i} className="font-serif text-[17px] leading-relaxed text-ink">
+                  <span className="mr-2.5 font-mono text-[11px] text-ink-3">{clock(p.at)}</span>
+                  {p.text}
+                  {i === paras.length - 1 && interim && <span className="text-ink-3"> {interim}</span>}
                 </p>
               ))}
+              {interim && paras.length === 0 && <p className="font-serif text-[17px] leading-relaxed text-ink-3">{interim}</p>}
             </div>
             {phase === 'saving' && (
               <div className="mx-auto mt-16 max-w-[360px] text-center">
