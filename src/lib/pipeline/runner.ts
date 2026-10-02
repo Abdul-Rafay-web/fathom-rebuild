@@ -1,3 +1,4 @@
+import { sql } from '../db';
 import { claim, complete, fail } from './queue';
 import { RUNNERS } from './steps';
 
@@ -8,6 +9,9 @@ import { RUNNERS } from './steps';
  */
 export async function runJobs({ budgetMs = 240_000, meetingId }: { budgetMs?: number; meetingId?: string } = {}) {
   const deadline = Date.now() + budgetMs;
+  // Garbage-collect two-phase uploads whose second phase never came (rows with
+  // no media after a day). Cheap: served by the started_at index, rarely matches.
+  if (!meetingId) await sql`delete from meetings where status = 'recording' and created_at < now() - interval '24 hours'`;
   const ran: { step: string; ok: boolean; ms: number; error?: string }[] = [];
   while (Date.now() < deadline) {
     const job = await claim(meetingId);

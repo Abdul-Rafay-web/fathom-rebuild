@@ -13,8 +13,11 @@ export const maxDuration = 300;
 export async function POST(req: Request) {
   const meetingId = new URL(req.url).searchParams.get('meeting') ?? undefined;
   if (meetingId && !isUuid(meetingId)) return json({ started: false });
+  // A job whose worker died (lock past the visibility timeout) counts as runnable:
+  // claim() reaps it. Without this, a crashed job would never be picked up again.
   const [q] = await sql<{ runnable: number; running: number }[]>`
-    select count(*) filter (where status = 'queued' and run_after <= now())::int as runnable,
+    select count(*) filter (where (status = 'queued' and run_after <= now())
+                               or (status = 'running' and locked_at <= now() - interval '6 minutes'))::int as runnable,
            count(*) filter (where status = 'running' and locked_at > now() - interval '6 minutes')::int as running
     from jobs ${meetingId ? sql`where meeting_id = ${meetingId}` : sql``}`;
   if (q.runnable === 0 || q.running > 0) return json({ started: false, ...q });

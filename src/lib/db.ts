@@ -18,6 +18,13 @@ export const sql =
     max: 6,
     idle_timeout: 20,
     connect_timeout: 15,
+    // Dead-socket detection. A NAT or flaky network can silently drop a pooled
+    // TCP connection; the next query on it then waits for retransmission
+    // timeouts (minutes) and, with one query in flight per connection, the
+    // pool wedges. Observed in local dev: a fresh client worked while the
+    // pool hung. Aggressive keepalive plus a bounded lifetime recycle them.
+    keep_alive: 10,
+    max_lifetime: 60 * 5,
     onnotice: () => {},
     // Supported by the driver at runtime but missing from its type definitions.
     ...({ max_pipeline: 1 } as object),

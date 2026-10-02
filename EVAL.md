@@ -6,10 +6,13 @@ Deepgram diarization, then speaker naming, then Gemini analysis, then quote grou
 
 | Meeting | Action items P / R (matched) | Decisions P / R (matched) | Speakers found | Line attribution |
 |---|---|---|---|---|
-| Harbor Logistics discovery call | 33% / 33% (1/3) | 100% / 100% (1/1) | 3 of 4 | 60% |
+| Harbor Logistics discovery call | 100% / 100% (3/3) | 100% / 100% (1/1) | 4 of 4 | 76% |
+| Maya / Priya 1:1 | 100% / 50% (1/2) | 50% / 100% (1/1) | 2 of 2 | 72% |
 | Mobile team standup | 50% / 100% (3/3) | 0% / 0% (0/1) | 5 of 5 | 59% |
+| Onboarding redesign review | 67% / 67% (2/3) | 67% / 100% (2/2) | 4 of 4 | 58% |
 | Q4 planning | 91% / 100% (10/10) | 75% / 100% (3/3) | 8 of 8 | 82% |
-| **All** | **70% / 88%**, F1 78% | **67% / 80%**, F1 73% | | **73%** |
+| Offline sync incident retro | 57% / 100% (4/4) | 100% / 100% (1/1) | 6 of 6 | 82% |
+| **All** | **74% / 92%**, F1 82% | **67% / 89%**, F1 76% | | **75%** |
 
 **How matching works.** A predicted action item counts only if its owner matches the planted owner (first name, edit distance ≤ 1,
 so "Lena" ~ "Lina") *and* its text overlaps the planted task (content-word Jaccard ≥ 0.2). Pairs are assigned with the Hungarian

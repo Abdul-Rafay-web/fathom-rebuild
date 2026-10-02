@@ -20,6 +20,8 @@ export async function listMeetings(): Promise<MeetingListItem[]> {
                                       order by s.talk_ms desc)
                      from speakers s where s.meeting_id = m.id), '[]') as speakers
     from meetings m
+    -- An upload that never completed (tab closed mid-upload) isn't a meeting.
+    where not (m.status = 'recording' and m.created_at < now() - interval '30 minutes')
     order by m.started_at desc`;
 }
 
