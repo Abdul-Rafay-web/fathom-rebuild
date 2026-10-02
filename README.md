@@ -112,7 +112,7 @@ jobs (Postgres) ─claim: FOR UPDATE SKIP LOCKED─► worker: transcribe → na
 - **Sweep line** over all speech intervals for crosstalk and interruptions, plus a serialized **cut-in** detector, because diarized transcripts rarely keep true overlap. → [`intervals.ts`](src/lib/algo/intervals.ts)
 - **Binary search** maps the playhead to the active line: O(log n) per frame. → [`bsearch.ts`](src/lib/algo/bsearch.ts)
 - **Interval merging** (timeline bars, talk time as a union), a **fingerprint** bucketing pass, and **fuzzy subsequence matching** with word-start and consecutive-run bonuses for the command palette. → [`fuzzy.ts`](src/lib/fuzzy.ts)
-- 12 unit tests: `npm test`.
+- 12 unit tests: `npm test`. Lint is clean under the React Compiler rules.
 
 **OS / systems / frontend runtime**
 - **Playback state lives outside React** ([`player.ts`](src/components/meeting/player.ts)). A requestAnimationFrame loop feeds `useSyncExternalStore` selectors, so the transcript re-renders when the *active line* changes, not 60 times a second. The transcript is **virtualized** (~30 DOM rows for a 300+ line meeting).
