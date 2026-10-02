@@ -1,36 +1,160 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Afterword
 
-## Getting Started
+**Meeting notes you can trust the day after.** A rebuild of [Fathom](https://fathom.video) for the 8x engineering assessment, built around the case the brief says matters most: *an eight-person call that runs an hour.*
 
-First, run the development server:
+- **Live app:** _(added after deploy)_
+- **Capture log:** [`CAPTURE-TEST.md`](CAPTURE-TEST.md) · prompts and responses in [`.agent-logs/`](.agent-logs/)
+- **Product plan & recon:** [`PLAN.md`](PLAN.md) · screenshots of Fathom in [`recon/`](recon/)
+- **Measured accuracy:** [`EVAL.md`](EVAL.md)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## The idea
+
+Fathom is excellent at *capture*. After using it end to end ([`recon/`](recon/)), what I kept running into was the **day after**: nobody re-watches an hour, and the notes can't be checked against what was said. On a big call, people come back with three questions:
+
+| Question | What Afterword does | What Fathom does |
+|---|---|---|
+| **"What do I have to do?"** | Action items with owner, due date and the exact moment, plus a cross-meeting inbox grouped by owner | Action items per call, no cross-meeting view (and "None detected" on my test call) |
+| **"Can I trust the summary?"** | **Every** summary line, decision and action item cites the transcript moment. Hover to see the verbatim quote, click to hear it. Claims the model can't back with a quote are dropped. | Summary with no links back to the source |
+| **"Where did we talk about X?"** | Hybrid keyword + semantic search returning **moments** (speaker + timestamp), and Ask with cited answers across all meetings | Search returns calls |
+
+## What I built, kept, changed and cut
+
+**Built**
+- **Meeting workspace.** It's laid out as *a document with its sources*: notes on the left; player, speaker map and transcript on the right. Fathom uses a narrow centre column and leaves ~40% of the screen empty.
+  - **Speaker timeline:** one lane per person, with chapter ticks and highlights. You can see who talked when on an 8-person call at a glance.
+  - **Transcript:** speaker and timestamp on every line (Fathom's bubbles show neither). It follows playback, clicking a line seeks, and it's virtualized, so a 70-minute meeting with 300+ lines scrolls smoothly.
+  - **Templates:** General, Standup, 1:1 and Sales. Each is generated on demand and cached by content hash.
+  - **Dynamics:** participation balance (normalized entropy of talk time), who cut in on whom, and monologues.
+  - **Keyboard:** <kbd>Space</kbd>/<kbd>K</kbd>, <kbd>J</kbd>/<kbd>L</kbd>, <kbd>H</kbd> highlight, <kbd>/</kbd> find. <kbd>Ctrl</kbd>+<kbd>K</kbd> opens the command palette everywhere.
+- **Clips.** Drag across the timeline or shift-click transcript lines, then **Share clip**. The public page needs no sign-in and plays only that range.
+- **Real pipeline.** Upload or record → Deepgram (diarized) → speaker naming → stats → grounded analysis → hybrid index. Pipeline progress is shown live.
+- **Live recording in the browser.** Live captions, live action items and <kbd>H</kbd> highlights while you talk, then the same post-call pipeline.
+- **Workspace vocabulary.** Team names and jargon are passed to the speech model. On the 8-person meeting this took speaker naming from 7/8 to **8/8** and fixed "Lena" being heard as "Lina".
+
+**Changed**
+- **Library rows instead of identical thumbnails.** Every meeting gets a *fingerprint*: who held the floor across the meeting, in 96 slices. A standup looks nothing like a 1:1.
+- **Templates cut from 15+ sales methodologies to 4.**
+- **No "Awaiting Attendees" limbo** (my main complaint in [`recon/notes.txt`](recon/notes.txt)): press record and words appear.
+
+**Cut**, deliberately:
+
+| Cut | Why |
+|---|---|
+| The bot that joins Zoom/Meet/Teams | The brief allows stubbing it. It's days of infrastructure work for no product insight, so the capture layer is browser recording + upload, feeding the same pipeline. |
+| Calendar sync | It only exists to schedule the bot. |
+| CRM, Deals, Alerts, Playlists, Refer, credits | Sales add-ons, not the core loop. |
+| Sign-up | Reviewers get in with one click into a seeded demo workspace. |
+
+## Seed data: honest version
+
+There are six meetings for one fictional company, Tidewater, including **Q4 planning: 8 people, 70 minutes**. Story threads run across meetings (an offline-sync bug, a big deal, a hiring plan), so search and Ask have something real to connect. How they were made:
+
+1. Dialogue was generated per agenda segment from specs with **planted** decisions and action items ([`scripts/seed/specs.mjs`](scripts/seed/specs.mjs)).
+2. Each line was voiced with a distinct Deepgram Aura voice and mixed, with real overlaps, into one audio file ([`render-audio.mjs`](scripts/seed/render-audio.mjs)).
+3. That audio went through **the production pipeline**, the same code path as an upload ([`ingest.mts`](scripts/seed/ingest.mts)).
+
+The transcripts, speaker names, notes and stats you see are genuine pipeline output, not hand-written fixtures. Because the truth is known, the pipeline is **scored** ([`EVAL.md`](EVAL.md)). On the 8-person meeting:
+- action-item recall: **100%**
+- decision recall: **100%**
+- speakers detected: **8 of 8**
+
+## Architecture
+
+```
+Browser ──upload (signed URL, direct to storage)──► Supabase Storage
+   │                                                    │
+   │ POST /api/uploads/:id/complete                     │ Deepgram fetches media by signed URL
+   ▼                                                    ▼
+jobs (Postgres) ─claim: FOR UPDATE SKIP LOCKED─► worker: transcribe → name_speakers → { stats, analyse, index }
+   ▲                                                         │  Gemini (schema-constrained JSON) + quote grounding
+   │ pg_cron (every min, only if work exists) / after()       ▼
+   └──────────────────────────────────────────── utterances · speakers · insights · action_items · chunks(pgvector, tsvector)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Next.js 16** (App Router, React 19, Turbopack) on **Vercel**, pinned to `syd1`, next to the database.
+- **Supabase**: Postgres 17 + pgvector, plus Storage.
+- **Deepgram Nova-3**: batch diarization + streaming captions. **Aura-2** voices the seed audio.
+- **Gemini**: Flash for analysis, Flash-Lite for the hot path, `gemini-embedding-001` (768-d) for search.
+- No ORM: SQL via `postgres`. No UI kit: Tailwind v4 + hand-built components. Fonts are self-hosted: Newsreader (reading), Schibsted Grotesk (UI), Fragment Mono (timestamps).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Engineering decisions, and where they live
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Databases**
+- **Job queue in Postgres.** Workers claim with `FOR UPDATE SKIP LOCKED`, so serverless invocations never double-process. Completing a step and enqueuing its successors in the DAG happens in **one transaction**. A visibility timeout reclaims jobs whose worker died. Rate limits (429) get linear backoff and more attempts; real errors get exponential backoff. → [`pipeline/queue.ts`](src/lib/pipeline/queue.ts)
+- **Indexes chosen for the access pattern:**
+  - B-tree `(meeting_id, start_ms)`, so a clip's transcript is a range scan
+  - generated `tsvector` + GIN for keyword search
+  - HNSW for vectors
+  - a **partial index** on queued jobs, so claims stay fast however much history accumulates
 
-## Learn More
+  → [`001_init.sql`](db/migrations/001_init.sql)
+- **Idempotency everywhere:**
+  - upload idempotency keys
+  - `unique (meeting_id, step)` jobs
+  - every pipeline step replaces its own outputs in a transaction, so retries converge instead of duplicating
+- **Optimistic concurrency** on action items (`version` column; a stale write gets 409 plus the current row). → [`api/action-items/[id]`](src/app/api/action-items/[id]/route.ts)
+- **A rate limiter in Postgres:** a fixed window via an atomic upsert. In-memory limiters reset on every serverless cold start. → [`ratelimit.ts`](src/lib/ratelimit.ts)
+- **Advisory-locked migrations** ([`scripts/migrate.mjs`](scripts/migrate.mjs)), plus RLS on every table. The browser can't read the database directly.
+- **A bug worth knowing about:** Supabase's transaction pooler can route pipelined statements to different backends, so one query got *another query's rows back*. The fix is `max_pipeline: 1`, with concurrency coming from the pool instead. → [`db.ts`](src/lib/db.ts)
 
-To learn more about Next.js, take a look at the following resources:
+**AI / ML**
+- **Grounding.** The model must cite a line *and* copy a short quote. A [`Grounder`](src/lib/algo/align.ts) checks the quote against a ±3-line window around the cited line (models are often off by one or two), then the whole transcript, using word-bigram containment. Claims whose quote can't be found are **dropped**, never shown with a made-up timestamp. The notes footer says how many were discarded.
+- **Schema-constrained JSON.** The Zod schema is converted to JSON Schema for constrained decoding, then used again to validate the output. A validation failure gets one retry with the error fed back, then the model chain falls through. → [`gemini.ts`](src/lib/ai/gemini.ts)
+- **Speaker naming.** Diarization gives anonymous labels. The LLM maps labels to names from introductions and addressing cues, with a confidence score. Only confident, unique names are accepted, and a name set by hand is never overwritten.
+- **Hybrid retrieval.** Postgres full-text search and pgvector are fused with **Reciprocal Rank Fusion**. The semantic arm has a distance cut-off **calibrated on this corpus**: relevant queries' best matches sit at 0.29–0.41, unrelated ones never get below 0.475. Chunks follow speaker turns (30–60 s), and each hit is pinned to its exact line. → [`search.ts`](src/lib/search.ts), [`chunk.ts`](src/lib/algo/chunk.ts)
+- **RAG with validated citations.** Ask sees only retrieved excerpts, and any citation outside the retrieved set is stripped. → [`ask.ts`](src/lib/ask.ts)
+- **Evaluation.** Precision/recall/F1 against planted truth, with **Hungarian-algorithm** matching (optimal 1:1), plus line-level diarization accuracy against the renderer's true timings. → [`scripts/eval.mts`](scripts/eval.mts), [`EVAL.md`](EVAL.md)
+- **Caching.** Template summaries are keyed by `sha256(prompt_version, template, transcript)`, so a prompt change can never serve stale output.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Algorithms**
+- **Sweep line** over all speech intervals for crosstalk and interruptions, plus a serialized **cut-in** detector, because diarized transcripts rarely keep true overlap. → [`intervals.ts`](src/lib/algo/intervals.ts)
+- **Binary search** maps the playhead to the active line: O(log n) per frame. → [`bsearch.ts`](src/lib/algo/bsearch.ts)
+- **Interval merging** (timeline bars, talk time as a union), a **fingerprint** bucketing pass, and **fuzzy subsequence matching** with word-start and consecutive-run bonuses for the command palette. → [`fuzzy.ts`](src/lib/fuzzy.ts)
+- 12 unit tests: `npm test`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**OS / systems / frontend runtime**
+- **Playback state lives outside React** ([`player.ts`](src/components/meeting/player.ts)). A requestAnimationFrame loop feeds `useSyncExternalStore` selectors, so the transcript re-renders when the *active line* changes, not 60 times a second. The transcript is **virtualized** (~30 DOM rows for a 300+ line meeting).
+- **Recorder** ([`Recorder.tsx`](src/components/Recorder.tsx)): one Opus encoder, two sinks.
+  - **Streaming socket:** it gets a 30 s token, so the API key never reaches the browser. It handles **backpressure** by watching `bufferedAmount`, then dropping the oldest slices, never the WebM header.
+  - **IndexedDB:** chunks are written as a **write-ahead log**, so a closed tab never loses a meeting; [`recorder-store.ts`](src/lib/recorder-store.ts) handles recovery.
+  - Timestamps use the **monotonic clock** (`performance.now()`), not wall time.
+  - WebM duration headers are patched, so recordings are seekable.
+- **Media never transits a serverless function.** Uploads go directly to storage via signed URLs (Vercel caps request bodies at 4.5 MB), and Deepgram fetches the file by signed URL.
+- **Local-dev finding:** a flaky router DNS hung `getaddrinfo` on **libuv's 4-thread pool**, which starved the whole dev server, including file I/O. Fixes:
+  - a development-only public-DNS resolver ([`instrumentation-node.ts`](src/instrumentation-node.ts))
+  - self-hosted fonts, so builds never depend on Google Fonts
 
-## Deploy on Vercel
+## Running it
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm install
+cp .env.example .env.local      # Deepgram, Gemini, Supabase keys
+npm run migrate                 # applies db/migrations/*.sql
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Seed data (optional; needs API quota):
+
+```bash
+node scripts/seed/gen-scripts.mjs        # dialogue from specs (Gemini)
+node scripts/seed/render-audio.mjs       # multi-voice audio (Deepgram Aura + ffmpeg)
+npx tsx --conditions=react-server scripts/seed/ingest.mts   # through the real pipeline
+npx tsx --conditions=react-server scripts/eval.mts          # score it → EVAL.md
+```
+
+After deploying: `node scripts/schedule-worker.mjs https://<your-app>` points the database's every-minute cron at the worker.
+
+## Trade-offs and what I'd do next
+
+- **No meeting bot.** I'd add a Recall.ai-style bot behind the same `uploads/complete` entry point; nothing downstream changes.
+- **No auth.** It's a single demo workspace by design. Next would be Supabase Auth plus RLS policies keyed on workspace membership. The schema already isolates everything per meeting.
+- **Diarization merges similar voices** (the Harbor call has 4 people; 3 were found). A per-workspace voice-print enrolment would fix this properly. Meanwhile, owners are taken from explicit naming in the conversation when labels and names disagree.
+- **Polling, not Realtime,** for pipeline progress. It's 2.5 s polls that also nudge the worker; simpler and robust. Supabase Realtime is already enabled on `meetings`/`jobs` (migration 002) for a later switch.
+- **Live captions need a Deepgram key with token-grant permission.** Without one, recording still works and the transcript arrives after stop. The UI says so instead of failing.
+
+### Deviations from [`PLAN.md`](PLAN.md)
+
+- **Recorder input.** The plan said AudioWorklet → PCM. I switched to a single MediaRecorder (Opus) feeding both sinks: one encoder instead of two, Deepgram accepts WebM/Opus directly, and the stored recording is byte-identical to what was streamed.
+- **Progress updates.** The plan said Realtime; I used polling (see above).

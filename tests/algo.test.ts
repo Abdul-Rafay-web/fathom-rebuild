@@ -114,3 +114,13 @@ test('fingerprint: dominant speaker per slice, silence as -1', () => {
   );
   assert.deepEqual(fp, [0, 0, 1, -1]);
 });
+
+test('fuzzy: subsequence match, word starts and runs rank higher', () => {
+  const { fuzzy } = require('../src/lib/fuzzy');
+  assert.equal(fuzzy('xyz', 'Q4 planning'), null);
+  const a = fuzzy('qp', 'Q4 planning')!;
+  assert.deepEqual(a.indices, [0, 3]); // both word starts
+  const run = fuzzy('plan', 'Q4 planning')!.score;
+  const scattered = fuzzy('plan', 'Pricing lanes and noise')!.score;
+  assert.ok(run > scattered);
+});
