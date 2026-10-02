@@ -12,7 +12,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import ffmpeg from 'ffmpeg-static';
 import { loadEnv } from '../env.mjs';
 import { installDnsFallback } from '../net.mjs';
 import { PEOPLE } from './specs.mjs';
@@ -119,7 +118,9 @@ for (const f of fs.readdirSync(SCRIPTS).filter((f) => f.endsWith('.json') && !f.
 
   const raw = path.join(dir, 'mix.pcm');
   fs.writeFileSync(raw, Buffer.from(mix.buffer));
-  const r = spawnSync(process.env.FFMPEG_PATH || ffmpeg, ['-y', '-loglevel', 'error', '-f', 's16le', '-ar', String(RATE), '-ac', '1', '-i', raw,
+  // ffmpeg-static is a seed-only tool (not an app dependency): npm i --no-save ffmpeg-static
+  const ffmpeg = process.env.FFMPEG_PATH || (await import('ffmpeg-static')).default;
+  const r = spawnSync(ffmpeg, ['-y', '-loglevel', 'error', '-f', 's16le', '-ar', String(RATE), '-ac', '1', '-i', raw,
     '-c:a', 'libmp3lame', '-b:a', '48k', out], { stdio: 'inherit' });
   if (r.status !== 0) throw new Error('ffmpeg failed');
   fs.rmSync(raw);
