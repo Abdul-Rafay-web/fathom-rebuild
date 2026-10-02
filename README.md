@@ -2,7 +2,8 @@
 
 **Meeting notes you can trust the day after.** A rebuild of [Fathom](https://fathom.video) for the 8x engineering assessment, built around the case the brief says matters most: *an eight-person call that runs an hour.*
 
-- **Live app:** _(added after deploy)_
+- **Live app:** https://fathom-rebuild-iota.vercel.app (opens straight into the demo workspace, no sign-in)
+- **Repository:** https://github.com/Abdul-Rafay-web/fathom-rebuild
 - **Capture log:** [`CAPTURE-TEST.md`](CAPTURE-TEST.md) · prompts and responses in [`.agent-logs/`](.agent-logs/)
 - **Product plan & recon:** [`PLAN.md`](PLAN.md) · screenshots of Fathom in [`recon/`](recon/)
 - **Measured accuracy:** [`EVAL.md`](EVAL.md)
