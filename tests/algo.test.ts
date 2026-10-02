@@ -100,3 +100,17 @@ test('computeStats: serialized cut-in on an unfinished sentence counts as an int
   );
   assert.deepEqual(s.interruptions, [{ by: 1, of: 0, count: 1 }]);
 });
+
+test('fingerprint: dominant speaker per slice, silence as -1', () => {
+  const { fingerprint } = require('../src/lib/algo/intervals');
+  const fp = fingerprint(
+    [
+      { start_ms: 0, end_ms: 2_000, speaker: 0 },
+      { start_ms: 2_000, end_ms: 3_000, speaker: 1 },
+      { start_ms: 2_200, end_ms: 2_400, speaker: 0 },
+    ],
+    4_000,
+    4,
+  );
+  assert.deepEqual(fp, [0, 0, 1, -1]);
+});

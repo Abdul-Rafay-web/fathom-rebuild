@@ -17,6 +17,7 @@ export type MeetingStats = {
   interruptions: { by: number; of: number; count: number }[];
   monologues: { speaker: number; start_ms: number; end_ms: number }[];
   silence_ms: number;
+  fingerprint?: number[];
 };
 
 const MONOLOGUE_MS = 90_000;  // one person holding the floor for 90s+
@@ -133,4 +134,29 @@ export function computeStats(utts: Interval[], duration_ms: number): MeetingStat
     monologues: monologues.sort((a, b) => a.start_ms - b.start_ms),
     silence_ms: Math.max(0, duration_ms - speech),
   };
+}
+
+/**
+ * A meeting's visual fingerprint: the timeline cut into `buckets` equal slices,
+ * each labelled with whoever spoke most in it (-1 = silence). Rendered as a thin
+ * strip in the library, it tells meetings apart at a glance (a standup looks
+ * nothing like a 1:1), unlike Fathom's identical video thumbnails.
+ */
+export function fingerprint(utts: Interval[], duration_ms: number, buckets = 96): number[] {
+  const size = Math.max(1, duration_ms) / buckets;
+  const acc: Map<number, number>[] = Array.from({ length: buckets }, () => new Map());
+  for (const u of utts) {
+    // Spread each utterance across every bucket it overlaps, weighted by overlap.
+    const b0 = Math.max(0, Math.floor(u.start_ms / size));
+    const b1 = Math.min(buckets - 1, Math.floor((u.end_ms - 1) / size));
+    for (let b = b0; b <= b1; b++) {
+      const ov = Math.min(u.end_ms, (b + 1) * size) - Math.max(u.start_ms, b * size);
+      if (ov > 0) acc[b].set(u.speaker, (acc[b].get(u.speaker) ?? 0) + ov);
+    }
+  }
+  return acc.map((m) => {
+    let best = -1, bestV = size * 0.15; // under 15% speech in a slice reads as silence
+    for (const [k, v] of m) if (v > bestV) { best = k; bestV = v; }
+    return best;
+  });
 }

@@ -1,29 +1,33 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next';
+import { Fragment_Mono, Newsreader, Schibsted_Grotesk } from 'next/font/google';
+import './globals.css';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const read = Newsreader({ subsets: ['latin'], variable: '--font-read', axes: ['opsz'], style: ['normal', 'italic'] });
+const ui = Schibsted_Grotesk({ subsets: ['latin'], variable: '--font-ui' });
+const code = Fragment_Mono({ subsets: ['latin'], weight: '400', variable: '--font-code' });
 
 export const metadata: Metadata = {
-  title: "Afterword",
-  description: "AI meeting notes you can verify, search and share.",
+  title: { default: 'Afterword', template: '%s · Afterword' },
+  description: 'Meeting notes you can verify, search and share. Every line cites the moment it came from.',
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f3efe6' },
+    { media: '(prefers-color-scheme: dark)', color: '#121411' },
+  ],
+};
+
+// Applies a saved theme before first paint (no flash of the wrong theme).
+const themeScript = `try{var t=localStorage.getItem('aw-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}`;
+
+export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en" className={`${read.variable} ${ui.variable} ${code.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }

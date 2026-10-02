@@ -8,7 +8,7 @@ import { embed, generateJSON, MODELS, toPgVector } from '../ai/gemini';
 import { signedReadUrl } from '../storage';
 import { Grounder } from '../algo/align';
 import { chunkUtterances } from '../algo/chunk';
-import { computeStats } from '../algo/intervals';
+import { computeStats, fingerprint } from '../algo/intervals';
 import { clock, speakerColor } from '../format';
 import {
   ANALYSIS_SYSTEM, AnalysisSchema, analysisPrompt, PROMPT_VERSION, SPEAKER_SYSTEM, SpeakerNamesSchema,
@@ -119,7 +119,8 @@ async function stats(meetingId: string) {
   const m = await meeting(meetingId);
   const lines = await loadLines(meetingId);
   const duration = Math.max(m.duration_ms, lines.at(-1)?.end_ms ?? 0);
-  const s = computeStats(lines.map((l) => ({ start_ms: l.start_ms, end_ms: l.end_ms, speaker: l.label, text: l.text })), duration);
+  const ivs = lines.map((l) => ({ start_ms: l.start_ms, end_ms: l.end_ms, speaker: l.label, text: l.text }));
+  const s = { ...computeStats(ivs, duration), fingerprint: fingerprint(ivs, duration) };
   await sql.begin(async (tx) => {
     for (const [label, v] of Object.entries(s.speakers)) {
       await tx`update speakers set talk_ms = ${v.talk_ms}, turns = ${v.turns}, longest_ms = ${v.longest_ms}

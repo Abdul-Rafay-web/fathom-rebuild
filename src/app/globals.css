@@ -1,26 +1,184 @@
 @import "tailwindcss";
 
+/*
+  Afterword design tokens.
+  Light = "paper": warm bone stock, iron-gall ink, verdigris accent, saffron
+  highlighter for marked moments. Dark = "inkwell": green-black, parchment text.
+  Weights stay at 300–500: hierarchy comes from size, serif/sans contrast and
+  space, not from bold.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --paper: #f3efe6;
+  --paper-2: #ebe5d8;
+  --card: #fbf9f4;
+  --sunk: #e4ddce;
+  --ink: #1d1b17;
+  --ink-2: #57524a;
+  --ink-3: #8b8475;
+  --rule: #d9d1c0;
+  --rule-2: #cbc1ad;
+  --accent: #2f6f62;
+  --accent-ink: #1e4c42;
+  --accent-wash: #dbe7e1;
+  --mark: #f2c14e;
+  --mark-wash: #f7e3b0;
+  --danger: #a3402b;
+  --ok: #4d7a3a;
+  --shadow: 0 1px 0 rgb(29 27 23 / 0.04), 0 8px 24px -12px rgb(29 27 23 / 0.18);
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --paper: #121411;
+    --paper-2: #181b17;
+    --card: #1b1e1a;
+    --sunk: #0d0f0c;
+    --ink: #ece6d8;
+    --ink-2: #b4ad9d;
+    --ink-3: #7f7a6d;
+    --rule: #2b2f29;
+    --rule-2: #3a3f37;
+    --accent: #84bfae;
+    --accent-ink: #a9d6c8;
+    --accent-wash: #1f2f2a;
+    --mark: #d9a93a;
+    --mark-wash: #3a3220;
+    --danger: #e08a72;
+    --ok: #9cc58a;
+    --shadow: 0 1px 0 rgb(0 0 0 / 0.3), 0 12px 32px -12px rgb(0 0 0 / 0.6);
+    color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --paper: #121411;
+  --paper-2: #181b17;
+  --card: #1b1e1a;
+  --sunk: #0d0f0c;
+  --ink: #ece6d8;
+  --ink-2: #b4ad9d;
+  --ink-3: #7f7a6d;
+  --rule: #2b2f29;
+  --rule-2: #3a3f37;
+  --accent: #84bfae;
+  --accent-ink: #a9d6c8;
+  --accent-wash: #1f2f2a;
+  --mark: #d9a93a;
+  --mark-wash: #3a3220;
+  --danger: #e08a72;
+  --ok: #9cc58a;
+  --shadow: 0 1px 0 rgb(0 0 0 / 0.3), 0 12px 32px -12px rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-card: var(--card);
+  --color-sunk: var(--sunk);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-rule-2: var(--rule-2);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-wash: var(--accent-wash);
+  --color-mark: var(--mark);
+  --color-mark-wash: var(--mark-wash);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+
+  --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-read), ui-serif, Georgia, serif;
+  --font-mono: var(--font-code), ui-monospace, monospace;
+
+  --shadow-lift: var(--shadow);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "ss01", "cv11";
+}
+
+::selection {
+  background: var(--mark-wash);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Quiet scrollbars that don't fight the paper. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-2) transparent;
+}
+
+/* Tabular numerals wherever time is shown. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Serif reading text: optical sizing on, generous measure. */
+.prose-read {
+  font-family: var(--font-serif);
+  font-optical-sizing: auto;
+  font-weight: 380;
+  font-size: 16.5px;
+  line-height: 1.6;
+}
+
+/* A highlighter stroke, not a box. */
+.marker {
+  background: linear-gradient(transparent 55%, var(--mark-wash) 55%);
+}
+
+@keyframes flash-line {
+  0% { background: var(--mark-wash); }
+  100% { background: transparent; }
+}
+.flash {
+  animation: flash-line 1.6s var(--ease-out-soft);
+}
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--paper-2) 0px, var(--sunk) 120px, var(--paper-2) 240px);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: 6px;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.8); }
+}
+.pulse-dot {
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }
