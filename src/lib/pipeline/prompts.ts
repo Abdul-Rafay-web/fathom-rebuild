@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Bump when prompts or schemas change: it's part of the insights cache key, so
 // stale cached output is never served after a prompt change.
-export const PROMPT_VERSION = 'v3';
+export const PROMPT_VERSION = 'v4';
 
 // --------------------------------------------------------------- shared shapes
 const line = z.number().int().describe('Line number (the N in "L<N>") of the transcript line that supports this.');
@@ -31,7 +31,11 @@ export const AnalysisSchema = SummarySchema.extend({
   action_items: z
     .array(
       z.object({
-        owner: z.string().describe('Exact speaker name from the transcript who committed to it, or "Unassigned".'),
+        owner: z
+          .string()
+          .describe(
+            'Who will do it: the person named or addressed in the conversation ("James, can you send…" → James), else the speaker who committed. Speaker labels can be wrong when voices sound alike, so explicit naming wins. "Unassigned" if unclear.',
+          ),
         text: z.string().describe('Imperative, specific task. E.g. "Send revised pricing deck to Acme".'),
         due: z.string().describe('Deadline as spoken (e.g. "Friday", "end of Q3"), or "" if none was given.'),
         line,

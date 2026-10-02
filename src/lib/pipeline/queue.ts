@@ -82,9 +82,11 @@ export async function complete(job: Job, startedAt: number) {
 
 export async function fail(job: Job, err: unknown, startedAt: number) {
   const msg = (err instanceof Error ? err.message : String(err)).slice(0, 2000);
-  const final = job.attempts >= job.max_attempts;
-  // Exponential backoff between attempts: 20s, 40s, 80s...
-  const delay = `${20 * 2 ** (job.attempts - 1)} seconds`;
+  // Rate limits mean "later", not "broken": they get a longer, linear backoff
+  // and more attempts. Real errors keep fast exponential backoff (20s, 40s, 80s).
+  const rateLimited = /HTTP 429|RESOURCE_EXHAUSTED|quota/i.test(msg);
+  const final = job.attempts >= (rateLimited ? Math.max(job.max_attempts, 8) : job.max_attempts);
+  const delay = rateLimited ? `${90 * job.attempts} seconds` : `${20 * 2 ** (job.attempts - 1)} seconds`;
   await sql`
     update jobs set
       status = ${final ? 'failed' : 'queued'},

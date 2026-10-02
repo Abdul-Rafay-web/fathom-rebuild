@@ -17,7 +17,7 @@ export const PEOPLE = {
   lena:   { name: 'Lena Novak',    role: 'Senior mobile engineer; dry humour, owns offline sync', voice: 'aura-2-pandora-en' },
   arjun:  { name: 'Arjun Mehta',   role: 'Infra and data engineer; precise, quotes metrics', voice: 'aura-2-hyperion-en' },
   rachel: { name: 'Rachel Kim',    role: 'Director of Operations at Harbor Logistics (prospect); 140 technicians, frustrated with paper work orders', voice: 'aura-2-athena-en' },
-  james:  { name: 'James Porter',  role: 'IT manager at Harbor Logistics; cares about SSO, security review, MDM', voice: 'aura-2-draco-en' },
+  james:  { name: 'James Porter',  role: 'IT manager at Harbor Logistics; cares about SSO, security review, MDM', voice: 'aura-2-hyperion-en' },
 };
 
 const COMPANY = `Tidewater is a 30-person startup selling a mobile app for field-service companies: dispatchers schedule jobs, technicians get work orders on their phones, and the app must work offline in basements and rural sites. Current ARR is about $2.1M with 46 customers.`;

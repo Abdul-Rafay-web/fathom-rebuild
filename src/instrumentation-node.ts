@@ -1,6 +1,7 @@
 // Development-only DNS fallback, loaded from instrumentation.ts on the Node.js
 // runtime. See instrumentation.ts for why.
 export async function installDevDns() {
+  console.log('[dev-dns] installing public-DNS fallback');
   // Patch the CommonJS object (the ESM namespace is read-only); net.connect reads from it.
   const dns = (await import('node:dns')).default;
   const resolver = new dns.promises.Resolver();

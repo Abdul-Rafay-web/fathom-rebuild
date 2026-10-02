@@ -16,7 +16,7 @@ installDnsFallback();
 
 const OUT = path.resolve('seed/scripts');
 fs.mkdirSync(OUT, { recursive: true });
-const MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+const MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
 const WPM = 150;
 
 const schema = {

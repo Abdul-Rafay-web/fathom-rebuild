@@ -103,6 +103,9 @@ body {
 }
 
 body {
+  /* clip (not hidden): stops off-canvas tooltips widening the page without
+     creating a scroll container, so position: sticky keeps working. */
+  overflow-x: clip;
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-sans);
