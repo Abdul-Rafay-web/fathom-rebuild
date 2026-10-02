@@ -1,0 +1,318 @@
+{
+ "slug": "mobile-standup",
+ "title": "Mobile team standup",
+ "truth": {
+  "decisions": {
+   "d1": "Use the CRDT approach only for technician notes; keep last-write-wins for job status fields."
+  },
+  "actions": {
+   "a1": {
+    "owner": "Arjun Mehta",
+    "text": "Export a week of sync conflict logs for Lena",
+    "due": "today"
+   },
+   "a2": {
+    "owner": "Lena Novak",
+    "text": "Share the first draft of the offline sync design doc",
+    "due": "Thursday"
+   },
+   "a3": {
+    "owner": "Tom Becker",
+    "text": "Fix the flaky iOS snapshot test or quarantine it",
+    "due": "end of day"
+   }
+  }
+ },
+ "lines": [
+  {
+   "speaker": "Daniel Okafor",
+   "text": "Alright everyone, let's get started. It is Tuesday, two days out from our Q4 planning sessions, and we need to keep our momentum high. We are currently sitting at forty-six customers and about two point one million in ARR, so our absolute focus this quarter is stabilizing the mobile client to protect that base and enable us to scale. Let's do our usual round-robin updates. Lena, do you want to kick things off?",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Sure. I spent most of yesterday dive-bombing the offline sync architecture. I've started drafting the core design doc, mostly looking at the trade-offs between using state-based CRDTs versus an operational merge approach for how we handle technician notes. When technicians are working deep in basements or rural areas with zero connectivity, they write these long, detailed maintenance logs, and then the sync engine completely chokes when they get back to their trucks.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "Yeah, that's historically been our biggest source of churn risk. What's the main blocker in deciding between those two approaches?",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Well, operational merge keeps our payload size really small, which is great for slow cellular networks, but CRDTs are way more robust when we have complex, overlapping edits. I am heavily leaning toward CRDTs for the text fields, but I'm slightly blocked because I don't want to design this in a vacuum. I need to see what actual conflicts are happening in production right now.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Are we seeing actual concurrent edits on the same technician note, or is it mostly just delayed updates arriving late?",
+   "overlap": true
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Exactly, that is the million-dollar question. If it's just late-arriving single-user updates, we don't need a heavy conflict-resolution framework. But if dispatchers and technicians are editing the same note at the same time, we absolutely do. I need real data to verify this.",
+   "overlap": false
+  },
+  {
+   "speaker": "Arjun Mehta",
+   "text": "I can jump in there. On the infra and data side, I have the new sync error dashboard about half-built now. Today's overall sync error rate is sitting at two point one percent. That is slightly elevated because of some database locking on the main job assignment tables, but the logging pipelines are working perfectly, so I can definitely extract that conflict data for you.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "That would be huge, Arjun. If I can get a raw dump of the JSON payloads from those conflict events, I can map out exactly which fields are colliding.",
+   "overlap": false
+  },
+  {
+   "speaker": "Arjun Mehta",
+   "text": "No problem at all. I will export a week of sync conflict logs for Lena, and I'll have that done today. I'll drop the CSV and the raw JSON dump into our shared engineering drive as soon as this meeting is over.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "Perfect. Thanks, Arjun. That is a critical dependency cleared. Lena, once you have those logs from Arjun today, when do you think we can see the first draft of the offline sync design doc?",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "If I get those logs today, I will share the first draft of the offline sync design doc by Thursday. That should give everyone on the team a couple of days to review it before our weekly architecture meeting on Friday.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Thursday works perfectly for me. We have our beta testing kickoff with the commercial HVAC customers in mid-November, and they are extremely sensitive about losing job notes. I want to be able to show them a clear technical path forward when we meet with them.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "Agreed. If we don't get offline sync right, we're going to struggle to sign any accounts larger than ten technicians. Arjun, let's swing back to you. Besides the sync dashboard, what else is on your plate today?",
+   "overlap": false
+  },
+  {
+   "speaker": "Arjun Mehta",
+   "text": "I'm focusing on those database locks I mentioned. We had a pretty nasty spike in write locks around 08:00 UTC today when the dispatchers were pushing out the morning schedules. It looks like the analytical query running on the dispatcher dashboard is locking the master schedule table, which then causes the mobile sync requests to queue up and eventually time out.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "Is that a indexing issue or are we doing a heavy table scan?",
+   "overlap": false
+  },
+  {
+   "speaker": "Arjun Mehta",
+   "text": "It's a heavy table scan. We're joining three massive tables without the right composite index. I'm going to replicate that query pattern in staging today, add the missing index, and see if we can reduce the query time from four seconds down to a few milliseconds. If that works, I'll push it to production tonight.",
+   "overlap": true
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "Excellent. Keep us updated in Slack on that. If we can get that query optimized, it should instantly drag that two point one percent sync error rate back down to our target of under one percent. Tom, let's move to you. What's the status on the onboarding checklist sketches?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Yeah, so I've been focused on the onboarding checklist sketch. The goal here, as Priya defined in our planning, is to get new dispatchers to their first scheduled job in under five minutes. I have a mid-fidelity prototype ready in Figma that focuses heavily on the technician invite flow. We know from our churn data that if a dispatcher doesn't invite a technician within forty-eight hours, they almost always drop off.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "How does the layout look for invite triggers? Are we prompting them right after account setup or waiting until they try to schedule a job?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "We're actually doing it as step two of the main dashboard checklist. Step one is adding your company details. Step two is adding your first technician. We show a little interactive map preview that says 'Add a tech to see their location live.' It really visualizes the value proposition immediately.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "Is there a bypass option? We have a small percentage of solo operators who don't have technicians to invite, right?",
+   "overlap": true
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Yes, absolutely. I designed a very clear 'I work alone' button right under the primary input. If they click that, we automatically configure their account as a solo operator, pre-populate their profile as the primary technician, and skip the invite screen entirely so they don't feel like the product isn't built for them.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "That is a fantastic addition, Tom. Our solo operator segment is currently about fifteen percent of our customer base, and they've been complaining about our multi-user setup steps. Have you run this by any users yet?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Not yet. I wanted to run it by Lena and Arjun first to make sure there are no technical constraints on how we handle that instant-on state for solo operators, specifically with how we generate mock data on the map to show them how the tracking works.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "From the mobile perspective, as long as we flag the user profile as 'solo' or 'demo mode' on the API response, we can handle the local UI state easily. We just need to make sure we don't sync actual dummy technician records to their local SQLite database, because that would clutter their device.",
+   "overlap": false
+  },
+  {
+   "speaker": "Arjun Mehta",
+   "text": "Adding a 'demo_mode' boolean to the user profile table is incredibly simple. I can add that schema migration in five minutes. It won't interfere with any existing data.",
+   "overlap": true
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Perfect. That gives me a clear green light on the mock data approach. I'll clean up the final visual states in Figma and post the link to the design channel later this morning so everyone can leave comments.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "Great work, Tom. Priya, let's jump over to you. What's the update on the product and pricing analysis?",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "The pricing analysis is almost wrapped up. I've been modeling our new tiers to see how we can align our revenue with the value we're delivering. The plan we're landing on is to package the new offline sync and advanced scheduling features into a new 'Pro' tier priced at sixty-nine dollars per user per month, while keeping our standard tier at forty-nine.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "How are our current forty-six customers going to react to that? We need to be extremely careful not to alienate our early adopters by forcing them onto a higher tier for features they might feel they've already paid for.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "We will absolutely grandfather them in. Anyone who is currently signed up will keep their current pricing and get access to the advanced sync features on their existing plan for a full twelve months. This tiering is strictly for new sign-ups starting in Q1. Our market research shows that larger accounts with twenty-plus trucks are more than willing to pay sixty-nine dollars for guaranteed offline sync.",
+   "overlap": true
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Yeah, if they lose even one job note due to sync issues, it easily costs them hundreds of dollars in lost billing. Sixty-nine bucks is a no-brainer for them.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Exactly. I'm finishing up the final revenue projection models today, and I'll be presenting the proposal to the founders tomorrow morning. Once we have their sign-off, I'll draft the updated marketing copy and coordinate with our sales reps so we're completely aligned.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "Great work, Priya. On my end, I spent most of yesterday writing and posting the job descriptions for the two new engineering roles we approved during Q4 planning. We are actively searching for a Senior iOS Engineer and a Full-Stack Engineer to help with the dispatcher web app. The listings are live on our careers page, so please share them with your networks.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "I'll share them in my local mobile developer Slack groups. We desperately need that extra iOS help; the build pipeline has been brutal lately and I've been stretched incredibly thin between architecture planning and bug fixing.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Speaking of the iOS build, is anyone going to address the massive elephant in the room? The flaky snapshot test on main is driving me absolutely insane. It's failing half my local builds when I'm trying to test UI layout tweaks.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Oh, is that the technician calendar view snapshot test again? It has been failing intermittently for weeks.",
+   "overlap": true
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Yes, it's the calendar view. It fails about fifty percent of the time because of some bizarre rendering race condition where the mock dates don't load fast enough, so it captures an empty calendar state instead of the populated one.",
+   "overlap": false
+  },
+  {
+   "speaker": "Arjun Mehta",
+   "text": "I saw that in the CI/CD logs too. It's adding about ten to fifteen minutes of retry time to every single pull request, which is actively hurting our cycle time. It's a huge bottleneck.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "It's because the test uses relative date mock objects, and if the local machine timezone or the CI server timezone doesn't match perfectly, the calendar renders a different month header.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "Okay, let's not go down a deep rabbit hole on timezone parsing and mock libraries right now. We need this resolved immediately because it's slowing down everyone's velocity. Tom, since you're already digging into the onboarding UI and you wrote the initial snapshot tests, can you take point on this?",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Yeah, I can take it. I just wasn't sure if it was a deep framework bug or something simple on my end, but I can dig into the timezone mocks.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "We need a clean build pipeline by tomorrow. Tom Becker commits to fix the flaky iOS snapshot test or quarantine it, due end of day today. If you can't find a permanent fix for the timezone rendering issue in the next couple of hours, just disable the test entirely so it doesn't block the queue, and we'll schedule a proper ticket for it later.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Understood. I will fix the flaky iOS snapshot test or quarantine it by end of day today. I'll make sure the pipeline is completely green before I sign off tonight.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "Thank you, Tom. Keeping main green is our top priority. Priya, quick question for you regarding the hiring. Do we have a referral bonus for these new engineering roles?",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Yes, we do. It's three thousand dollars for any candidate who is successfully hired and stays past their ninety-day review. I'll post the details of the referral program in our general Slack channel today so everyone has the official link.",
+   "overlap": false
+  },
+  {
+   "speaker": "Arjun Mehta",
+   "text": "I have a former colleague from my previous company who was an exceptional backend engineer. He has a lot of experience with high-throughput Postgres databases, which would be perfect for our scaling challenges. I'll send him the full-stack listing today.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "That sounds incredibly promising, Arjun. Direct referrals from engineers we trust are worth their weight in gold. Please introduce him to me via email as soon as possible.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "To loop back to the onboarding checklist, Priya, do you have a specific tracking plan for the analytics events? I want to make sure I'm styling the checklist steps in a way that matches the data points we need to capture.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Yes, I drafted a tracking sheet yesterday. The primary metric we need to measure is the time from initial signup to the first successfully dispatched job. Secondary events are when they complete each step of the onboarding checklist, and the drop-off rates on the technician invite screen.",
+   "overlap": false
+  },
+  {
+   "speaker": "Tom Becker",
+   "text": "Great. I'll make sure the design file has clear annotations for those event triggers. It should make the instrumentation process much smoother for the developers when we start building it.",
+   "overlap": true
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "Just make sure we aren't passing any sensitive technician phone numbers or email addresses in those tracking payloads. We need to stay compliant with our enterprise customer privacy agreements.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Definitely. No PII will be sent to our analytics platform. Everything will be completely anonymized using UUIDs. I'll verify the schema before we push anything to staging.",
+   "overlap": false
+  },
+  {
+   "speaker": "Arjun Mehta",
+   "text": "And on the database side, we should make sure those analytics events are batched. If every single step on the mobile app triggers a synchronous write to our analytics server, we'll see another spike in network overhead.",
+   "overlap": false
+  },
+  {
+   "speaker": "Lena Novak",
+   "text": "We already have a local analytics queue on mobile that batches events every sixty seconds or when the app goes into the background, so that shouldn't impact our production server load too much.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "That's excellent proactive thinking, team. It looks like we have a really clear set of action items for today. Arjun is exporting the sync conflict logs for Lena. Lena is on track to deliver the first draft of the offline sync design doc by Thursday. Tom is tackling the flaky iOS snapshot test by the end of the day, and Priya is finalizing our new Pro pricing model.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Sounds like a solid plan. I am super excited about the direction we're moving in this quarter. Let's make sure we execute cleanly on these initial steps.",
+   "overlap": false
+  },
+  {
+   "speaker": "Daniel Okafor",
+   "text": "Agreed. Let's keep our communication high in Slack. If anyone gets blocked, raise your hand early. Thanks for the energy today, everyone. Let's get to work and I'll see you all tomorrow.",
+   "overlap": false
+  }
+ ]
+}

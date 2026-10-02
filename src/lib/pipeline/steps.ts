@@ -41,7 +41,8 @@ async function transcribe(meetingId: string) {
   const m = await meeting(meetingId);
   if (!m.media_path) throw new Error('meeting has no media');
   const url = await signedReadUrl(m.media_path, 60 * 30);
-  const dg = await transcribeUrl(url);
+  const vocab = await sql<{ term: string }[]>`select term from vocabulary order by kind, term limit 100`;
+  const dg = await transcribeUrl(url, vocab.map((v) => v.term));
   if (!dg.utterances.length) throw new Error('no speech detected in the recording');
 
   const labels = [...new Set(dg.utterances.map((u) => u.speaker))].sort((a, b) => a - b);

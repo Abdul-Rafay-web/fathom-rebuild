@@ -86,7 +86,7 @@ for (const f of fs.readdirSync(SCRIPTS).filter((f) => f.endsWith('.json') && !f.
   const clips = await pool(script.lines, 6, (l, i) => {
     const voice = voiceOf[l.speaker];
     if (!voice) throw new Error(`no voice for ${l.speaker}`);
-    return tts(l.text, voice, path.join(dir, `${i}.pcm`));
+    return tts(l.text, voice, path.join(dir, `${i}-${voice}.pcm`)); // voice in the key: changing a voice re-synthesizes only that speaker
   });
   console.log();
 

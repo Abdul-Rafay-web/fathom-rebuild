@@ -12,7 +12,7 @@ export const PEOPLE = {
   daniel: { name: 'Daniel Okafor', role: 'Head of Engineering; careful, thinks in risks and trade-offs', voice: 'aura-2-zeus-en' },
   priya:  { name: 'Priya Raman',   role: 'Product Manager; data-driven, pushes for scope clarity', voice: 'aura-2-andromeda-en' },
   tom:    { name: 'Tom Becker',    role: 'Design lead; user-empathy, occasionally drifts into detail', voice: 'aura-2-arcas-en' },
-  sofia:  { name: 'Sofia Alvarez', role: 'Head of Sales; energetic, optimistic about deals, talks fast', voice: 'aura-2-helena-en' },
+  sofia:  { name: 'Sofia Alvarez', role: 'Head of Sales; energetic, optimistic about deals, talks fast', voice: 'aura-2-theia-en' },
   marcus: { name: 'Marcus Reid',   role: 'Customer Success lead; voice of the customer, brings ticket numbers', voice: 'aura-2-orion-en' },
   lena:   { name: 'Lena Novak',    role: 'Senior mobile engineer; dry humour, owns offline sync', voice: 'aura-2-pandora-en' },
   arjun:  { name: 'Arjun Mehta',   role: 'Infra and data engineer; precise, quotes metrics', voice: 'aura-2-hyperion-en' },

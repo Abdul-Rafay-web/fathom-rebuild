@@ -10,9 +10,10 @@ const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export const MODELS = {
   // Full-context analysis of up to ~1h transcripts.
-  analysis: ['gemini-3.8-flash', 'gemini-3.5-flash'],
+  // Free-tier quotas are per model, so a longer chain is also more quota.
+  analysis: ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-flash-latest'],
   // Hot path: speaker naming, live action items, Ask.
-  fast: ['gemini-3.1-flash-lite', 'gemini-flash-lite-latest', 'gemini-3.8-flash'],
+  fast: ['gemini-3.1-flash-lite', 'gemini-flash-lite-latest', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.7-flash'],
   embedding: 'gemini-embedding-001',
 } as const;
 

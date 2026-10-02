@@ -1,10 +1,20 @@
 import type { Metadata, Viewport } from 'next';
-import { Fragment_Mono, Newsreader, Schibsted_Grotesk } from 'next/font/google';
+import localFont from 'next/font/local';
+import Script from 'next/script';
 import './globals.css';
 
-const read = Newsreader({ subsets: ['latin'], variable: '--font-read', axes: ['opsz'], style: ['normal', 'italic'] });
-const ui = Schibsted_Grotesk({ subsets: ['latin'], variable: '--font-ui' });
-const code = Fragment_Mono({ subsets: ['latin'], weight: '400', variable: '--font-code' });
+// Self-hosted (SIL Open Font License): no build-time or runtime dependency on
+// Google Fonts, no third-party requests from readers' browsers.
+const read = localFont({
+  src: [
+    { path: '../fonts/Newsreader.woff2', weight: '200 800', style: 'normal' },
+    { path: '../fonts/Newsreader-Italic.woff2', weight: '200 800', style: 'italic' },
+  ],
+  variable: '--font-read',
+  display: 'swap',
+});
+const ui = localFont({ src: '../fonts/SchibstedGrotesk.woff2', weight: '400 900', variable: '--font-ui', display: 'swap' });
+const code = localFont({ src: '../fonts/FragmentMono.woff2', weight: '400', variable: '--font-code', display: 'swap' });
 
 export const metadata: Metadata = {
   title: { default: 'Afterword', template: '%s · Afterword' },
@@ -24,10 +34,10 @@ const themeScript = `try{var t=localStorage.getItem('aw-theme');if(t)document.do
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="en" className={`${read.variable} ${ui.variable} ${code.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
-      <body>{children}</body>
+      <body>
+        <Script id="theme" strategy="beforeInteractive">{themeScript}</Script>
+        {children}
+      </body>
     </html>
   );
 }

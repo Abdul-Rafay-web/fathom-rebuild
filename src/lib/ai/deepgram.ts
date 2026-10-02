@@ -17,7 +17,7 @@ export type DGResult = { duration_ms: number; utterances: DGUtterance[]; model: 
  * Deepgram fetches the media itself from a signed URL, so the audio never
  * transits our serverless function (no body-size limits, no double egress).
  */
-export async function transcribeUrl(url: string): Promise<DGResult> {
+export async function transcribeUrl(url: string, keyterms: string[] = []): Promise<DGResult> {
   const params = new URLSearchParams({
     model: 'nova-3',
     diarize: 'true',
@@ -26,6 +26,8 @@ export async function transcribeUrl(url: string): Promise<DGResult> {
     utterances: 'true',
     utt_split: '1.1', // split utterances on pauses >1.1s: readable lines, fewer mid-sentence breaks
   });
+  // Key-term prompting: workspace names and jargon bias recognition toward them.
+  for (const t of keyterms.slice(0, 100)) params.append('keyterm', t);
   const res = await fetchRetry(
     `${API}/listen?${params}`,
     {

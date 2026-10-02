@@ -6,7 +6,7 @@ import postgres from 'postgres';
 import { loadEnv } from './env.mjs';
 
 loadEnv();
-const sql = postgres(process.env.DATABASE_URL, { prepare: false, max: 1, onnotice: () => {} });
+const sql = postgres(process.env.DATABASE_URL, { prepare: false, max_pipeline: 1, max: 1, onnotice: () => {} });
 const dir = path.resolve('db/migrations');
 const LOCK_KEY = 8_008_001;
 
