@@ -55,10 +55,13 @@ There are six meetings for one fictional company, Tidewater, including **Q4 plan
 2. Each line was voiced with a distinct Deepgram Aura voice and mixed, with real overlaps, into one audio file ([`render-audio.mjs`](scripts/seed/render-audio.mjs)).
 3. That audio went through **the production pipeline**, the same code path as an upload ([`ingest.mts`](scripts/seed/ingest.mts)).
 
-The transcripts, speaker names, notes and stats you see are genuine pipeline output, not hand-written fixtures. Because the truth is known, the pipeline is **scored** ([`EVAL.md`](EVAL.md)). On the 8-person meeting:
-- action-item recall: **100%**
-- decision recall: **100%**
-- speakers detected: **8 of 8**
+The transcripts, speaker names, notes and stats you see are genuine pipeline output, not hand-written fixtures. Because the truth is known, the pipeline is **scored** ([`EVAL.md`](EVAL.md)).
+
+| | All six meetings | The 8-person hour |
+|---|---|---|
+| Action-item recall | **92%** (F1 82%) | **100%** |
+| Decision recall | **89%** | **100%** |
+| Speaker count detected | correct in every meeting | **8 of 8** |
 
 ## Architecture
 
@@ -122,9 +125,11 @@ jobs (Postgres) ─claim: FOR UPDATE SKIP LOCKED─► worker: transcribe → na
   - Timestamps use the **monotonic clock** (`performance.now()`), not wall time.
   - WebM duration headers are patched, so recordings are seekable.
 - **Media never transits a serverless function.** Uploads go directly to storage via signed URLs (Vercel caps request bodies at 4.5 MB), and Deepgram fetches the file by signed URL.
-- **Local-dev finding:** a flaky router DNS hung `getaddrinfo` on **libuv's 4-thread pool**, which starved the whole dev server, including file I/O. Fixes:
-  - a development-only public-DNS resolver ([`instrumentation-node.ts`](src/instrumentation-node.ts))
-  - self-hosted fonts, so builds never depend on Google Fonts
+- **Lessons from a flaky network.** Each of these is a fix that ships:
+  - Hung `getaddrinfo` calls occupy **libuv's 4-thread pool** and starve everything else that uses it, including file I/O. Fixes: a development-only public-DNS resolver with stale-while-revalidate caching ([`instrumentation-node.ts`](src/instrumentation-node.ts)), and self-hosted fonts, so builds never depend on Google Fonts.
+  - Pooled TCP connections were silently dropped by NAT. With one query in flight per connection, the pool wedged while a fresh client worked fine. Fix: **10 s TCP keepalive** and a **5-minute connection lifetime**.
+  - A worker that died mid-job left it `running`. The visibility timeout reclaims it, and the kick endpoint now counts stale locks as runnable work. That endpoint had a bug, and this incident found it.
+  - Two-phase uploads abandoned between their two steps are hidden after 30 minutes and garbage-collected after a day.
 
 ## Running it
 
@@ -150,7 +155,11 @@ After deploying: `node scripts/schedule-worker.mjs https://<your-app>` points th
 
 - **No meeting bot.** I'd add a Recall.ai-style bot behind the same `uploads/complete` entry point; nothing downstream changes.
 - **No auth.** It's a single demo workspace by design. Next would be Supabase Auth plus RLS policies keyed on workspace membership. The schema already isolates everything per meeting.
-- **Diarization merges similar voices** (the Harbor call has 4 people; 3 were found). A per-workspace voice-print enrolment would fix this properly. Meanwhile, owners are taken from explicit naming in the conversation when labels and names disagree.
+- **Diarization can merge similar voices.** An early render of the Harbor call merged two male voices, and action-item recall there was 33%. It reached 100% after two changes:
+  - **A real-world fix:** owners now come from explicit naming in the conversation whenever it disagrees with the diarized label.
+  - **A seed-data fix:** more distinct voices.
+
+  Per-workspace voice-print enrolment would be the proper long-term fix.
 - **Polling, not Realtime,** for pipeline progress. It's 2.5 s polls that also nudge the worker; simpler and robust. Supabase Realtime is already enabled on `meetings`/`jobs` (migration 002) for a later switch.
 - **Live captions need a Deepgram key with token-grant permission.** Without one, recording still works and the transcript arrives after stop. The UI says so instead of failing.
 
