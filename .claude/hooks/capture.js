@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PROJECT = 'fathom-rebuild';
-const AUTHOR = 'abdul-rafay-AST';
+const AUTHOR = 'Abdul-Rafay-web';
 const TOOL = 'claude-code';
 
 const event = process.argv[2]; // session | prompt | stop
