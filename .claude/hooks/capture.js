@@ -107,15 +107,28 @@ function main() {
 
   let entry = '';
   const ts = now.toISOString();
+  const promptEntry = (p, model) =>
+    `[LOG_ENTRY type=PROMPT num=${p.num} session=${short}]\ntimestamp: ${p.ts}\nmodel: ${model}\n\n${p.prompt}\n\n\n`;
+
   if (event === 'prompt') {
+    // A prompt held back by an interrupted turn (Stop never fired) is flushed first.
+    if (state.pending) { body += promptEntry(state.pending, state.model || 'unknown'); state.pending = null; }
     const entries = readTranscript(input.transcript_path);
-    const model = lastModel(entries) || state.model || process.env.ANTHROPIC_MODEL || 'unknown';
+    const model = lastModel(entries) || state.model || process.env.ANTHROPIC_MODEL || null;
     state.count += 1;
-    state.model = model;
     state.first = state.first || ts;
     state.last = ts;
     state.responded = false;
-    entry = `[LOG_ENTRY type=PROMPT num=${state.count} session=${short}]\ntimestamp: ${ts}\nmodel: ${model}\n\n${input.prompt ?? ''}\n\n\n`;
+    const p = { num: state.count, ts, prompt: input.prompt ?? '' };
+    if (model) {
+      state.model = model;
+      entry = promptEntry(p, model);
+    } else {
+      // First prompt of a fresh session: no exact model id exists yet (the desktop
+      // app's SessionStart carries none). Hold the prompt, with its original
+      // timestamp, until Stop can read the model off the first response.
+      state.pending = p;
+    }
   } else if (event === 'stop') {
     if (input.stop_hook_active) return;
     // The transcript can lag the Stop event slightly; retry briefly.
@@ -146,6 +159,7 @@ function main() {
     if (!text) text = '(no text response captured)';
     const model = res?.model && res.model !== '<synthetic>' ? res.model : (state.model || 'unknown');
     state.model = model;
+    if (state.pending) { body += promptEntry(state.pending, model); state.pending = null; }
     // Turns triggered without a new prompt (e.g. background task wake-ups) are tagged as such.
     const tag = state.responded ? ' continuation=true' : '';
     state.responded = true;
