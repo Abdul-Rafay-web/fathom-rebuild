@@ -2,8 +2,8 @@
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { signIn, signInWithGoogle, signUp, type AuthState } from './actions';
+import { ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { signIn, signInAsDemo, signInWithGoogle, signUp, type AuthState } from './actions';
 import { cx } from '@/components/ui';
 
 type Mode = 'signin' | 'signup';
@@ -13,7 +13,7 @@ const INTENT_COPY: Record<string, string> = {
   record: 'Sign in to record a meeting.',
 };
 
-export function AuthForm({ initialMode, next, intent, googleError, google }: { initialMode: Mode; next: string; intent: string | null; googleError: boolean; google: boolean }) {
+export function AuthForm({ initialMode, next, intent, googleError, demoError, google }: { initialMode: Mode; next: string; intent: string | null; googleError: boolean; demoError: boolean; google: boolean }) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [inState, inAction] = useActionState<AuthState, FormData>(signIn, undefined);
   const [upState, upAction] = useActionState<AuthState, FormData>(signUp, undefined);
@@ -90,7 +90,16 @@ export function AuthForm({ initialMode, next, intent, googleError, google }: { i
         <Submit label={mode === 'signin' ? 'Sign in' : 'Create account'} />
       </form>
 
-      <p className="mt-5 text-center text-[13px] text-ink-3">
+      <div className="my-6 flex items-center gap-3 text-[11.5px] tracking-[0.12em] text-ink-3 uppercase">
+        <span className="h-px flex-1 bg-rule" /> just looking <span className="h-px flex-1 bg-rule" />
+      </div>
+      <form action={signInAsDemo}>
+        <input type="hidden" name="next" value={next} />
+        <DemoButton />
+      </form>
+      {demoError && <p className="mt-2 text-center text-[12.5px] text-danger">The demo is busy right now. Try again in a minute.</p>}
+
+      <p className="mt-6 text-center text-[13px] text-ink-3">
         {mode === 'signin' ? 'New to Afterword? ' : 'Already have an account? '}
         <button type="button" onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')} className="font-medium text-accent hover:text-accent-ink">
           {mode === 'signin' ? 'Create an account' : 'Sign in'}
@@ -126,6 +135,23 @@ function Submit({ label }: { label: string }) {
     >
       {pending && <Loader2 size={16} className="animate-spin" />}
       {label}
+    </button>
+  );
+}
+
+function DemoButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      disabled={pending}
+      className="group flex w-full items-center gap-3.5 rounded-2xl border border-mark/50 bg-mark-wash/50 px-4 py-3.5 text-left transition-[transform,background,border] hover:-translate-y-px hover:border-mark hover:bg-mark-wash disabled:opacity-70"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rail font-display text-[17px] text-mark">T</span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14.5px] font-medium text-ink">Try the demo account</span>
+        <span className="block text-[12.5px] text-ink-2">Tidewater: six real meetings, incl. an 8-person hour. No sign-up.</span>
+      </span>
+      {pending ? <Loader2 size={16} className="animate-spin text-ink-3" /> : <ArrowRight size={16} className="text-ink-3 transition-transform group-hover:translate-x-0.5" />}
     </button>
   );
 }

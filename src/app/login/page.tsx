@@ -24,10 +24,13 @@ async function googleEnabled() {
 export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
   const sp = await searchParams;
   const next = typeof sp.next === 'string' && sp.next.startsWith('/') && !sp.next.startsWith('//') ? sp.next : '/';
-  if ((await getViewer()).user) redirect(next);
+  const viewer = await getViewer();
+  // Real users don't need this page; the demo account may visit it to create a real account.
+  if (viewer.user && !viewer.user.isDemo) redirect(next);
   const mode = sp.mode === 'signup' ? 'signup' : 'signin';
   const intent = typeof sp.intent === 'string' ? sp.intent : null;
   const googleError = sp.error === 'google';
+  const demoError = sp.error === 'demo' || sp.error === 'busy';
   const google = await googleEnabled();
 
   return (
@@ -76,11 +79,9 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
           <span className="font-display text-[22px]">Afterword</span>
         </Link>
         <div className="mx-auto my-auto w-full max-w-[400px] py-10">
-          <AuthForm initialMode={mode} next={next} intent={intent} googleError={googleError} google={google} />
+          <AuthForm initialMode={mode} next={next} intent={intent} googleError={googleError} demoError={demoError} google={google} />
         </div>
-        <p className="text-center text-[12.5px] text-ink-3">
-          Just looking? <Link href="/" className="text-accent underline-offset-4 hover:underline">Explore the demo workspace</Link>, no account needed.
-        </p>
+        <p className="text-center text-[12px] text-ink-3">Private by default. Your meetings are visible only to you.</p>
       </section>
     </div>
   );

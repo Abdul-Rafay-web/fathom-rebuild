@@ -1,15 +1,30 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// Reachable without signing in: the auth pages and public clip links.
+const PUBLIC = [/^\/login(\/|$)/, /^\/auth\//, /^\/c\//];
+
 /**
- * Keeps the Supabase session fresh: access tokens are short-lived, and Server
- * Components can't write cookies, so the refresh happens here, before render.
- * This is not the authorization layer; every route and query checks access itself.
+ * 1. Sends visitors without a valid session to /login (keeping where they were going).
+ * 2. Keeps the Supabase session fresh: access tokens are short-lived, and Server
+ *    Components can't write cookies, so the refresh happens here, before render.
+ * This is a routing gate, not the authorization layer: every route and query
+ * still checks access itself (API routes answer 401/404 rather than redirect).
  */
 export async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  const isPublic = PUBLIC.some((r) => r.test(path)) || path.startsWith('/api/');
   let response = NextResponse.next({ request: { headers: request.headers } });
-  // Only pay for a session check when a session cookie exists.
-  if (!request.cookies.getAll().some((c) => c.name.startsWith('sb-'))) return response;
+
+  const toLogin = () => {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.search = path === '/' ? '' : `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
+    return NextResponse.redirect(url);
+  };
+
+  const hasSession = request.cookies.getAll().some((c) => c.name.startsWith('sb-'));
+  if (!hasSession) return isPublic ? response : toLogin();
 
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookies: {
@@ -21,12 +36,12 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims?.sub && !isPublic) return toLogin(); // expired or invalid session
   return response;
 }
 
 export const config = {
-  // Pages and server actions. Skip static assets, the public clip pages, and
-  // the polling/worker endpoints, which don't need a refreshed session.
-  matcher: ['/((?!_next/static|_next/image|icon|apple-icon|favicon|c/|api/jobs|.*\\.(?:svg|png|jpg|woff2)$).*)'],
+  // Everything except static assets and the polling/worker endpoint.
+  matcher: ['/((?!_next/static|_next/image|icon|apple-icon|favicon|api/jobs|.*\.(?:svg|png|jpg|woff2)$).*)'],
 };

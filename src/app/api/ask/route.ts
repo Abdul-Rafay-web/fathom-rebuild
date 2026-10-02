@@ -14,6 +14,7 @@ export async function POST(req: Request) {
   if (!(await rateLimit('ask', 30, 600))) return error('Too many questions, give it a minute', 429);
   if (b.meetingId && (await meetingAccess(b.meetingId)).access === 'none') return error('not found', 404);
   const v = await getViewer();
+  if (!v.user) return error('Sign in first', 401);
   try {
     return json(await ask(b.q, { workspaceId: v.workspace.id, meetingId: b.meetingId }));
   } catch (e) {

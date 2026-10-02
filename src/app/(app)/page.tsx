@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Compass, Mic, Search, Upload } from 'lucide-react';
+import { Mic, Search, Upload } from 'lucide-react';
 import { getViewer } from '@/lib/auth';
 import { listMeetings, type MeetingListItem } from '@/lib/queries';
 import { duration } from '@/lib/format';
@@ -148,9 +148,9 @@ function FirstRun() {
     <div className="mt-10 rounded-3xl border border-rule bg-card/70 p-8 backdrop-blur sm:p-10">
       <h2 className="text-[32px] leading-tight">Your workspace is ready.</h2>
       <p className="mt-2 max-w-[56ch] text-[15px] text-ink-2">
-        Everything here is private to you. Bring in your first meeting, or look around the demo to see what you’ll get.
+        Everything here is private to you. Bring in your first meeting: record one live, or upload a recording you already have.
       </p>
-      <div className="mt-7 grid gap-3 sm:grid-cols-3">
+      <div className="mt-7 grid gap-3 sm:grid-cols-2">
         <Link href="/record" className={`${card} hover:border-accent/40`}>
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-wash text-accent"><Mic size={18} /></span>
           <div className="mt-4 text-[15px] font-medium text-ink">Record a meeting</div>
@@ -161,13 +161,6 @@ function FirstRun() {
           <div className="mt-4 text-[15px] font-medium text-ink">Upload a recording</div>
           <p className="mt-1 text-[13px] leading-relaxed text-ink-3">Any audio or video file up to 50 MB (about an hour of audio).</p>
         </OpenUpload>
-        <form action="/workspace" method="post">
-          <button name="to" value="demo" className={`${card} hover:border-mark/60`}>
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-mark-wash text-ink"><Compass size={18} /></span>
-            <div className="mt-4 text-[15px] font-medium text-ink">Explore the demo</div>
-            <p className="mt-1 text-[13px] leading-relaxed text-ink-3">Six processed meetings, including an 8-person hour.</p>
-          </button>
-        </form>
       </div>
     </div>
   );

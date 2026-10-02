@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { rateLimit } from '@/lib/ratelimit';
 import { supabaseAdmin, supabaseServer } from '@/lib/supabase/server';
+import { DEMO_EMAIL, demoPassword } from '@/lib/auth';
 
 export type AuthState = { error?: string; field?: 'email' | 'password' | 'name' } | undefined;
 
@@ -47,6 +48,8 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
     return { error: i.message, field: i.path[0] as 'email' | 'password' };
   }
   if (!(await rateLimit('signup', 6, 3600))) return { error: 'Too many sign-ups from this network. Try again later.' };
+  // The demo address is reserved: claiming it would hijack the shared demo account.
+  if (parsed.data.email === DEMO_EMAIL) return { error: 'That address is reserved. Use your own email.', field: 'email' };
 
   const { error } = await supabaseAdmin().auth.admin.createUser({
     email: parsed.data.email,
@@ -63,6 +66,24 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
   const { error: e2 } = await supabase.auth.signInWithPassword(parsed.data);
   if (e2) return { error: 'Account created. Please sign in.' };
   redirect(safeNext(form.get('next')));
+}
+
+/**
+ * One click into the read-only Tidewater demo. The demo user is created on
+ * first use (idempotent: an "already exists" error just means it's there).
+ */
+export async function signInAsDemo(form: FormData) {
+  const next = safeNext(form.get('next'));
+  if (!(await rateLimit('demo-signin', 30, 600))) redirect('/login?error=busy');
+  const creds = { email: DEMO_EMAIL, password: demoPassword() };
+  const supabase = await supabaseServer();
+  let { error } = await supabase.auth.signInWithPassword(creds);
+  if (error) {
+    await supabaseAdmin().auth.admin.createUser({ ...creds, email_confirm: true, user_metadata: { name: 'Demo account' } });
+    ({ error } = await supabase.auth.signInWithPassword(creds));
+  }
+  if (error) redirect('/login?error=demo');
+  redirect(next);
 }
 
 export async function signInWithGoogle(form: FormData) {

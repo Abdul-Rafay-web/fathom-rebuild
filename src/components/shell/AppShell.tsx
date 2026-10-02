@@ -14,7 +14,7 @@ import { OPEN_UPLOAD } from '../library/Bits';
 
 export type PaletteMeeting = { id: string; title: string; started_at: string };
 export type ShellViewer = {
-  user: { id: string; email: string; name: string; avatar: string | null } | null;
+  user: { id: string; email: string; name: string; avatar: string | null; isDemo: boolean } | null;
   workspace: { name: string; isDemo: boolean };
   personalName: string | null;
   canEdit: boolean;
@@ -46,7 +46,9 @@ export function AppShell({ children, meetings, openActions, viewer }: { children
   const [palette, setPalette] = useState(false);
   const [upload, setUpload] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
-  const signedIn = !!viewer.user;
+  // The demo account is read-only: recording and uploading lead to sign-up.
+  const canCreate = viewer.canEdit;
+  const signupFor = (intent: string) => `/login?mode=signup&intent=${intent}`;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -59,12 +61,12 @@ export function AppShell({ children, meetings, openActions, viewer }: { children
     return () => window.removeEventListener('keydown', onKey);
   }, []);
   useEffect(() => {
-    const open = () => (signedIn ? setUpload(true) : router.push('/login?next=/&intent=upload'));
+    const open = () => (canCreate ? setUpload(true) : router.push(signupFor('upload')));
     window.addEventListener(OPEN_UPLOAD, open);
     return () => window.removeEventListener(OPEN_UPLOAD, open);
-  }, [signedIn, router]);
+  }, [canCreate, router]);
 
-  const startUpload = () => (signedIn ? setUpload(true) : router.push('/login?next=/&intent=upload'));
+  const startUpload = () => (canCreate ? setUpload(true) : router.push(signupFor('upload')));
 
   const nav = (
     <nav className="flex flex-col gap-0.5">
@@ -92,7 +94,7 @@ export function AppShell({ children, meetings, openActions, viewer }: { children
   const actions = (
     <div className="flex flex-col gap-2">
       <Link
-        href={signedIn ? '/record' : '/login?next=/record'}
+        href={canCreate ? '/record' : signupFor('record')}
         onClick={() => setMobileNav(false)}
         className="group flex h-11 items-center justify-center gap-2 rounded-xl bg-accent text-[14px] font-medium text-paper shadow-[0_8px_24px_-10px_var(--accent)] transition-[transform,background] hover:-translate-y-px hover:bg-accent-ink active:translate-y-0"
       >
@@ -113,7 +115,6 @@ export function AppShell({ children, meetings, openActions, viewer }: { children
         {/* Desktop rail */}
         <aside className="sticky top-0 hidden h-screen w-[256px] shrink-0 flex-col bg-rail px-4 py-6 text-rail-ink lg:flex">
           <Link href="/" className="px-1.5" aria-label="Afterword home"><Wordmark tone="rail" /></Link>
-          {signedIn && <WorkspaceSwitch viewer={viewer} />}
           <button
             onClick={() => setPalette(true)}
             className="mt-5 mb-3 flex h-10 items-center gap-2.5 rounded-xl bg-white/5 px-3 text-[13px] text-rail-ink-2 ring-1 ring-white/8 transition-colors hover:bg-white/8 hover:text-rail-ink"
@@ -147,8 +148,7 @@ export function AppShell({ children, meetings, openActions, viewer }: { children
               exit={{ opacity: 0, y: -8, transition: { duration: 0.12 } }}
               className="fixed inset-x-0 top-14 z-40 flex flex-col gap-5 bg-rail p-4 text-rail-ink shadow-lift lg:hidden"
             >
-              {signedIn && <WorkspaceSwitch viewer={viewer} />}
-              {nav}
+                  {nav}
               {actions}
               <Account viewer={viewer} />
             </motion.div>
@@ -156,7 +156,7 @@ export function AppShell({ children, meetings, openActions, viewer }: { children
         </AnimatePresence>
 
         <main className="min-w-0 flex-1 pt-14 lg:pt-0">
-          {viewer.workspace.isDemo && <DemoBanner signedIn={signedIn} />}
+          {viewer.user?.isDemo && <DemoBanner />}
           {children}
         </main>
 
@@ -167,29 +167,6 @@ export function AppShell({ children, meetings, openActions, viewer }: { children
         <Toaster />
       </div>
     </ViewerCtx.Provider>
-  );
-}
-
-function WorkspaceSwitch({ viewer }: { viewer: ShellViewer }) {
-  const mine = !viewer.workspace.isDemo;
-  return (
-    <form action="/workspace" method="post" className="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-white/5 p-1 ring-1 ring-white/8">
-      {(['mine', 'demo'] as const).map((k) => {
-        const active = (k === 'mine') === mine;
-        return (
-          <button
-            key={k}
-            name="to"
-            value={k}
-            disabled={active}
-            className={cx('relative h-8 rounded-lg text-[12.5px] transition-colors', active ? 'text-rail-ink' : 'text-rail-ink-2 hover:text-rail-ink')}
-          >
-            {active && <motion.span layoutId="ws-pill" className="absolute inset-0 rounded-lg bg-rail-2 ring-1 ring-white/8" />}
-            <span className="relative">{k === 'mine' ? 'My meetings' : 'Demo'}</span>
-          </button>
-        );
-      })}
-    </form>
   );
 }
 
@@ -219,6 +196,23 @@ function Account({ viewer }: { viewer: ShellViewer }) {
     );
   }
   const u = viewer.user;
+  if (u.isDemo) {
+    return (
+      <div className="flex items-center gap-2.5 border-t border-white/8 pt-4">
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-mark font-display text-[15px] text-rail">T</span>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13px] text-rail-ink">Demo account</div>
+          <div className="truncate text-[11.5px] text-rail-ink-2">Tidewater · read-only</div>
+        </div>
+        {themeBtn}
+        <form action={signOut}>
+          <button aria-label="Leave the demo" title="Leave the demo" className="flex h-9 w-9 items-center justify-center rounded-lg text-rail-ink-2 hover:bg-white/5 hover:text-rail-ink">
+            <LogOut size={15} />
+          </button>
+        </form>
+      </div>
+    );
+  }
   return (
     <div className="flex items-center gap-2.5 border-t border-white/8 pt-4">
       {u.avatar ? (
@@ -241,23 +235,15 @@ function Account({ viewer }: { viewer: ShellViewer }) {
   );
 }
 
-function DemoBanner({ signedIn }: { signedIn: boolean }) {
+function DemoBanner() {
   return (
     <div className="border-b border-rule bg-mark-wash/55">
       <div className="mx-auto flex max-w-[1100px] flex-wrap items-center gap-x-3 gap-y-1 px-5 py-2.5 text-[13px] sm:px-8">
         <span className="h-1.5 w-1.5 rounded-full bg-mark" />
-        <span className="text-ink-2">
-          {signedIn ? 'You’re viewing the Tidewater demo workspace. It’s read-only.' : 'You’re exploring the Tidewater demo: six real meetings, processed end to end.'}
-        </span>
-        {signedIn ? (
-          <form action="/workspace" method="post" className="ml-auto">
-            <button name="to" value="mine" className="inline-flex items-center gap-1 font-medium text-accent hover:text-accent-ink">Back to my meetings <ArrowRight size={13} /></button>
-          </form>
-        ) : (
-          <Link href="/login?mode=signup" className="ml-auto inline-flex items-center gap-1 font-medium text-accent hover:text-accent-ink">
-            Create a free account to record your own <ArrowRight size={13} />
-          </Link>
-        )}
+        <span className="text-ink-2">You’re in the read-only demo account: the Tidewater team’s meetings, processed end to end.</span>
+        <Link href="/login?mode=signup" className="ml-auto inline-flex items-center gap-1 font-medium text-accent hover:text-accent-ink">
+          Create your own account <ArrowRight size={13} />
+        </Link>
       </div>
     </div>
   );

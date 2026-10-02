@@ -2,7 +2,7 @@
 
 **Meeting notes you can trust the day after.** A rebuild of [Fathom](https://fathom.video) for the 8x engineering assessment, built around the case the brief says matters most: *an eight-person call that runs an hour.*
 
-- **Live app:** https://fathom-rebuild-iota.vercel.app (opens straight into the demo workspace, no sign-in)
+- **Live app:** https://fathom-rebuild-iota.vercel.app. Press **Try the demo account** on the sign-in page: one click, no sign-up.
 - **Repository:** https://github.com/Abdul-Rafay-web/fathom-rebuild
 - **Capture log:** [`CAPTURE-TEST.md`](CAPTURE-TEST.md) · prompts and responses in [`.agent-logs/`](.agent-logs/)
 - **Product plan & recon:** [`PLAN.md`](PLAN.md) · screenshots of Fathom in [`recon/`](recon/)
@@ -50,14 +50,16 @@ Fathom is excellent at *capture*. After using it end to end ([`recon/`](recon/))
 
 ## Accounts and private workspaces
 
-- **Visitors (no account)** land in the public **Tidewater demo**, which satisfies "the live link opens for somebody who is not signed in". The demo is **read-only**: ticking a task or renaming a speaker works in your tab, with a note that it isn't saved. Sharing a clip still works, because it only adds data.
-- **Signed-in users** (email + password, or Google) get a **private workspace**, created on first visit. Recording, upload, search, Ask and the action-item inbox are scoped to it. A switcher in the sidebar flips to the demo and back.
+- **Every visit starts at sign-in.** Visitors without a session are redirected to `/login`, which remembers where they were going.
+- **One-click demo account.** "Try the demo account" signs a visitor into a shared, **read-only** account whose workspace is the Tidewater demo (six processed meetings). It needs no password or sign-up, so the live link still works for someone who isn't signed in as me. The demo account's password is an HMAC of a server-only secret: it's never stored, typed or shared, and the address is reserved so nobody can sign up as it.
+- **Real accounts** (email + password, or Google) get a **private workspace**, created on first visit. Recording, upload, search, Ask and the action-item inbox are scoped to it. Tidewater is visible only to the demo account.
+- **What stays public:** shared clip links (`/c/…`), by design.
 - **How:**
-  - **Sessions:** Supabase Auth sessions in httpOnly cookies, kept fresh by [`proxy.ts`](src/proxy.ts).
-  - **Authorization:** checked on the server for every route and query via [`lib/auth.ts`](src/lib/auth.ts). `meetingAccess()` returns `none | read | write`. Someone else's private meeting is a 404, indistinguishable from a missing one.
-  - **Database:** every meeting has a `workspace_id` ([`006_workspaces.sql`](db/migrations/006_workspaces.sql)). Search filters candidates by workspace in **both** retrieval arms *before* ranking, so other tenants' data can't surface or skew the fusion.
+  - **Sessions:** Supabase Auth sessions in httpOnly cookies. [`proxy.ts`](src/proxy.ts) refreshes them and redirects visitors without one.
+  - **Authorization:** checked on the server for every route and query via [`lib/auth.ts`](src/lib/auth.ts). `meetingAccess()` returns `none | read | write`, and someone else's meeting is a 404.
+  - **Database:** every meeting has a `workspace_id` ([`006_workspaces.sql`](db/migrations/006_workspaces.sql)). Search filters candidates by workspace in **both** retrieval arms *before* ranking.
   - **Closed a leak:** the old anonymous Realtime read policies were dropped.
-- **Sign-up, without email friction.** Accounts are created server-side and confirmed immediately, then signed in: one step. Supabase's built-in mailer allows only a few emails an hour, which would block a demo. The trade-off is that emails aren't verified.
+- **Sign-up without email friction.** Accounts are created server-side and confirmed immediately (Supabase's built-in mailer allows only a few emails an hour). The trade-off is that emails aren't verified.
 - **Google sign-in** turns on by itself once the provider is enabled in Supabase: the login page reads `/auth/v1/settings`.
 
 ## Seed data: honest version

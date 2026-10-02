@@ -8,7 +8,8 @@ export const metadata: Metadata = { title: 'Record' };
 export const dynamic = 'force-dynamic';
 
 export default async function RecordPage() {
-  // Recordings go into your private workspace, so recording needs an account.
-  if (!(await getViewer()).user) redirect('/login?next=/record');
+  // Recordings go into your private workspace: the demo account can't record.
+  const v = await getViewer();
+  if (!v.personal) redirect(v.user ? '/login?mode=signup&intent=record' : '/login?next=/record');
   return <Recorder />;
 }
