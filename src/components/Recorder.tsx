@@ -233,7 +233,7 @@ export function Recorder() {
     <div className="mx-auto flex max-w-[980px] flex-col px-5 pt-10 pb-20 sm:px-8 lg:pt-14">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-serif text-[40px] leading-none tracking-[-0.015em]">{recording ? 'Recording' : 'Record a meeting'}</h1>
+          <h1 className="text-[46px] leading-[1.02] sm:text-[56px]">{recording ? 'Recording' : 'Record a meeting'}</h1>
           <p className="mt-3 max-w-[60ch] text-[13.5px] text-ink-3">
             Records from this browser’s microphone: put the call on speaker, or use it in the room. Let everyone know they’re being recorded.
           </p>
@@ -309,7 +309,7 @@ export function Recorder() {
             </div>
             {phase === 'saving' && (
               <div className="mx-auto mt-16 max-w-[360px] text-center">
-                <p className="font-serif text-[20px]">Saving your recording</p>
+                <p className="font-display text-[20px]">Saving your recording</p>
                 <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-paper-2"><div className="h-full bg-accent transition-[width]" style={{ width: `${progress * 100}%` }} /></div>
                 <p className="mt-2 text-[12.5px] text-ink-3">Then it’s straight into transcription.</p>
               </div>

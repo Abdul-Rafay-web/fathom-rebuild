@@ -2,6 +2,8 @@ import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { sql } from '@/lib/db';
 import { body, error, json, uuid } from '@/lib/api';
+import { forbidden, meetingAccess } from '@/lib/auth';
+import { rateLimit } from '@/lib/ratelimit';
 
 const Create = z.object({
   meetingId: uuid,
@@ -13,6 +15,10 @@ const Create = z.object({
 export async function POST(req: Request) {
   const b = await body(req, Create);
   if (b instanceof Response) return b;
+  // Sharing is additive, so readers (including demo visitors) may create clips.
+  const { access } = await meetingAccess(b.meetingId);
+  if (access === 'none') return forbidden(access);
+  if (!(await rateLimit('clip', 30, 3600))) return error('Too many clips, try again later', 429);
   if (b.end_ms - b.start_ms < 1000) return error('A clip must be at least 1 second');
   if (b.end_ms - b.start_ms > 20 * 60_000) return error('Clips are limited to 20 minutes');
   // 128 bits from the OS CSPRNG: unguessable, so the link itself is the capability.

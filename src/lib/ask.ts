@@ -20,8 +20,8 @@ export type AskResult = {
   sources: { n: number; meeting_id: string; meeting_title: string; moment_ms: number; speakers: string[]; snippet: string }[];
 };
 
-export async function ask(question: string, meetingId?: string): Promise<AskResult> {
-  const hits: Hit[] = await hybridSearch(question, { meetingId, limit: 8 });
+export async function ask(question: string, opts: { workspaceId: string; meetingId?: string }): Promise<AskResult> {
+  const hits: Hit[] = await hybridSearch(question, { ...opts, limit: 8 });
   if (!hits.length) return { answer: "I couldn't find anything about that in your meetings.", answerable: false, sources: [] };
 
   const context = hits

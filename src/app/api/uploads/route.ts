@@ -3,6 +3,7 @@ import { sql } from '@/lib/db';
 import { body, error, json } from '@/lib/api';
 import { rateLimit } from '@/lib/ratelimit';
 import { signedUploadUrl } from '@/lib/storage';
+import { getViewer } from '@/lib/auth';
 
 const MAX_BYTES = 50 * 1024 * 1024; // Supabase free-tier object limit
 
@@ -20,12 +21,14 @@ const Upload = z.object({
 export async function POST(req: Request) {
   const b = await body(req, Upload);
   if (b instanceof Response) return b;
+  const v = await getViewer();
+  if (!v.personal) return error('Sign in to upload or record your own meetings.', 401);
   if (!(await rateLimit('upload', 12, 3600))) return error('Upload limit reached, try again in an hour', 429);
 
   const title = b.title?.trim() || 'Untitled recording';
   const [m] = await sql<{ id: string; status: string }[]>`
-    insert into meetings (title, source, status, media_mime, idempotency_key)
-    values (${title}, ${b.source}, 'recording', ${b.mime}, ${b.idempotencyKey})
+    insert into meetings (title, source, status, media_mime, idempotency_key, workspace_id)
+    values (${title}, ${b.source}, 'recording', ${b.mime}, ${b.idempotencyKey}, ${v.personal.id})
     on conflict (idempotency_key) do update set updated_at = now()
     returning id, status`;
   if (m.status !== 'recording') return json({ meetingId: m.id, alreadyUploaded: true });

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { sql } from '@/lib/db';
 import { body, error, isUuid, json } from '@/lib/api';
 import { enqueue } from '@/lib/pipeline/queue';
+import { forbidden, meetingAccess } from '@/lib/auth';
 
 const Rename = z.object({ name: z.string().trim().min(1).max(80) });
 
@@ -9,6 +10,10 @@ const Rename = z.object({ name: z.string().trim().min(1).max(80) });
 export async function PATCH(req: Request, ctx: RouteContext<'/api/speakers/[id]'>) {
   const { id } = await ctx.params;
   if (!isUuid(id)) return error('not found', 404);
+  const [sp] = await sql<{ meeting_id: string }[]>`select meeting_id from speakers where id = ${id}`;
+  if (!sp) return error('not found', 404);
+  const { access } = await meetingAccess(sp.meeting_id);
+  if (access !== 'write') return forbidden(access);
   const b = await body(req, Rename);
   if (b instanceof Response) return b;
   const res = await sql.begin(async (tx) => {

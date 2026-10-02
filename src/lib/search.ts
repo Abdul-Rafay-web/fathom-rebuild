@@ -49,7 +49,7 @@ async function queryVector(q: string) {
   return v;
 }
 
-export async function hybridSearch(q: string, opts: { meetingId?: string; limit?: number } = {}): Promise<Hit[]> {
+export async function hybridSearch(q: string, opts: { workspaceId: string; meetingId?: string; limit?: number }): Promise<Hit[]> {
   const limit = opts.limit ?? 20;
   let vec: string | null = null;
   try {
@@ -57,7 +57,11 @@ export async function hybridSearch(q: string, opts: { meetingId?: string; limit?
   } catch {
     vec = null; // embeddings unavailable: degrade to keyword-only rather than fail
   }
-  const scope = opts.meetingId ? sql`and c.meeting_id = ${opts.meetingId}` : sql``;
+  // Tenancy: candidates are restricted to the workspace's meetings in BOTH arms,
+  // before ranking, so another workspace's chunks can never surface or skew RRF.
+  const scope = opts.meetingId
+    ? sql`and c.meeting_id = ${opts.meetingId}`
+    : sql`and c.meeting_id in (select id from meetings where workspace_id = ${opts.workspaceId})`;
 
   const rows = await sql<Omit<Hit, 'moment_ms'>[]>`
     with q as (select websearch_to_tsquery('english', ${q}) as tsq),

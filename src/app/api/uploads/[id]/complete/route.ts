@@ -5,6 +5,7 @@ import { body, error, isUuid, json } from '@/lib/api';
 import { storageAdmin } from '@/lib/storage';
 import { enqueue, syncMeetingStatus } from '@/lib/pipeline/queue';
 import { runJobs } from '@/lib/pipeline/runner';
+import { forbidden, meetingAccess } from '@/lib/auth';
 
 export const maxDuration = 300;
 
@@ -17,6 +18,8 @@ const Complete = z.object({
 export async function POST(req: Request, ctx: RouteContext<'/api/uploads/[id]/complete'>) {
   const { id } = await ctx.params;
   if (!isUuid(id)) return error('bad id', 404);
+  const { access } = await meetingAccess(id);
+  if (access !== 'write') return forbidden(access);
   const b = await body(req, Complete);
   if (b instanceof Response) return b;
 

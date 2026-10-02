@@ -15,6 +15,8 @@ type Props = {
   decisions: Decision[];
   actions: ActionItem[];
   setActions: (f: (a: ActionItem[]) => ActionItem[]) => void;
+  canEdit: boolean;
+  onReadOnly: () => void;
   highlights: Highlight[];
   onDeleteHighlight: (id: string) => void;
   speakers: Map<string, SpeakerRow>;
@@ -93,7 +95,7 @@ export function Notes(p: Props) {
           <div className="space-y-7">
             {summary.sections.map((s) => (
               <div key={s.heading}>
-                <h4 className="mb-2 font-serif text-[20px] leading-snug tracking-[-0.005em]">{s.heading}</h4>
+                <h4 className="mb-2 font-display text-[20px] leading-snug tracking-[-0.005em]">{s.heading}</h4>
                 <ul className="space-y-2">
                   {s.points.map((pt, i) => (
                     <li key={i} className="prose-read relative pl-4 text-ink before:absolute before:top-[0.72em] before:left-0 before:h-[5px] before:w-[5px] before:rounded-full before:bg-rule-2">
@@ -136,7 +138,7 @@ export function Notes(p: Props) {
         ) : (
           <ul className="divide-y divide-rule rounded-xl border border-rule bg-card">
             {p.actions.map((a) => (
-              <ActionRow key={a.id} a={a} speakers={p.speakers} setActions={p.setActions} onPlay={p.onPlay} />
+              <ActionRow key={a.id} a={a} speakers={p.speakers} setActions={p.setActions} onPlay={p.onPlay} canEdit={p.canEdit} onReadOnly={p.onReadOnly} />
             ))}
           </ul>
         )}
@@ -202,11 +204,12 @@ export function Notes(p: Props) {
   );
 }
 
-function ActionRow({ a, speakers, setActions, onPlay }: { a: ActionItem; speakers: Map<string, SpeakerRow>; setActions: Props['setActions']; onPlay: (ms: number) => void }) {
+function ActionRow({ a, speakers, setActions, onPlay, canEdit, onReadOnly }: { a: ActionItem; speakers: Map<string, SpeakerRow>; setActions: Props['setActions']; onPlay: (ms: number) => void; canEdit: boolean; onReadOnly: () => void }) {
   const owner = a.owner_speaker_id ? speakers.get(a.owner_speaker_id) : undefined;
   const toggle = async () => {
     const next = !a.done;
     setActions((xs) => xs.map((x) => (x.id === a.id ? { ...x, done: next } : x))); // optimistic
+    if (!canEdit) return onReadOnly();
     const r = await fetch(`/api/action-items/${a.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

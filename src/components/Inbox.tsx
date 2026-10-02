@@ -6,6 +6,7 @@ import { clock } from '@/lib/format';
 import type { InboxItem } from '@/lib/queries';
 import { Avatar, cx, Empty, Segmented } from './ui';
 import { toast } from './toast';
+import { demoNotice, useViewer } from './shell/AppShell';
 
 type Item = Omit<InboxItem, 'started_at'> & { started_at: string };
 type Filter = 'open' | 'done' | 'all';
@@ -17,6 +18,7 @@ const ownerKey = (n: string | null) => (n ? n.trim().split(/\s+/)[0].toLowerCase
 
 export function Inbox({ initial }: { initial: Item[] }) {
   const [items, setItems] = useState(initial);
+  const viewer = useViewer();
   const [filter, setFilter] = useState<Filter>('open');
   const [group, setGroup] = useState<Group>('owner');
   const [who, setWho] = useState<string | null>(null);
@@ -51,6 +53,7 @@ export function Inbox({ initial }: { initial: Item[] }) {
   const toggle = async (it: Item) => {
     const next = !it.done;
     setItems((xs) => xs.map((x) => (x.id === it.id ? { ...x, done: next } : x)));
+    if (!viewer.canEdit) return demoNotice(!!viewer.user);
     const r = await fetch(`/api/action-items/${it.id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ done: next, version: it.version }),
     });
@@ -93,7 +96,7 @@ export function Inbox({ initial }: { initial: Item[] }) {
             <section key={g.title + (g.sub ?? '')}>
               <h2 className="mb-2 flex items-center gap-2.5 border-b border-rule pb-2">
                 {group === 'owner' && <Avatar name={g.title} color={g.color ?? 'var(--ink-3)'} size={22} />}
-                <span className="font-serif text-[20px]">{g.href ? <Link href={g.href} className="hover:text-accent-ink">{g.title}</Link> : g.title}</span>
+                <span className="font-display text-[20px]">{g.href ? <Link href={g.href} className="hover:text-accent-ink">{g.title}</Link> : g.title}</span>
                 {g.sub && <span className="text-[12.5px] text-ink-3">{g.sub}</span>}
                 <span className="ml-auto text-[12px] text-ink-3 tnum">{g.items.length}</span>
               </h2>

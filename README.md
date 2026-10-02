@@ -48,6 +48,18 @@ Fathom is excellent at *capture*. After using it end to end ([`recon/`](recon/))
 | CRM, Deals, Alerts, Playlists, Refer, credits | Sales add-ons, not the core loop. |
 | Sign-up | Reviewers get in with one click into a seeded demo workspace. |
 
+## Accounts and private workspaces
+
+- **Visitors (no account)** land in the public **Tidewater demo**, which satisfies "the live link opens for somebody who is not signed in". The demo is **read-only**: ticking a task or renaming a speaker works in your tab, with a note that it isn't saved. Sharing a clip still works, because it only adds data.
+- **Signed-in users** (email + password, or Google) get a **private workspace**, created on first visit. Recording, upload, search, Ask and the action-item inbox are scoped to it. A switcher in the sidebar flips to the demo and back.
+- **How:**
+  - **Sessions:** Supabase Auth sessions in httpOnly cookies, kept fresh by [`proxy.ts`](src/proxy.ts).
+  - **Authorization:** checked on the server for every route and query via [`lib/auth.ts`](src/lib/auth.ts). `meetingAccess()` returns `none | read | write`. Someone else's private meeting is a 404, indistinguishable from a missing one.
+  - **Database:** every meeting has a `workspace_id` ([`006_workspaces.sql`](db/migrations/006_workspaces.sql)). Search filters candidates by workspace in **both** retrieval arms *before* ranking, so other tenants' data can't surface or skew the fusion.
+  - **Closed a leak:** the old anonymous Realtime read policies were dropped.
+- **Sign-up, without email friction.** Accounts are created server-side and confirmed immediately, then signed in: one step. Supabase's built-in mailer allows only a few emails an hour, which would block a demo. The trade-off is that emails aren't verified.
+- **Google sign-in** turns on by itself once the provider is enabled in Supabase: the login page reads `/auth/v1/settings`.
+
 ## Seed data: honest version
 
 There are six meetings for one fictional company, Tidewater, including **Q4 planning: 8 people, 70 minutes**. Story threads run across meetings (an offline-sync bug, a big deal, a hiring plan), so search and Ask have something real to connect. How they were made:

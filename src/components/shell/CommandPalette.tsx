@@ -1,6 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { motion } from 'motion/react';
 import { CheckSquare, CornerDownLeft, FileText, Library, Mic, Search, Sparkles, Upload } from 'lucide-react';
 import { fuzzy } from '@/lib/fuzzy';
 import { cx, Kbd } from '../ui';
@@ -62,12 +63,21 @@ export function CommandPalette({
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-start justify-center bg-ink/25 px-4 pt-[12vh] backdrop-blur-[2px]" onMouseDown={onClose}>
-      <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: { duration: 0.12 } }}
+      className="fixed inset-0 z-[90] flex items-start justify-center bg-rail/40 px-4 pt-[12vh] backdrop-blur-[3px]"
+      onMouseDown={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: -10, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -6, scale: 0.98, transition: { duration: 0.12 } }}
         role="dialog"
         aria-label="Command palette"
         onMouseDown={(e) => e.stopPropagation()}
-        className="w-full max-w-[560px] overflow-hidden rounded-2xl border border-rule bg-card shadow-lift"
+        className="w-full max-w-[580px] overflow-hidden rounded-2xl border border-rule bg-card shadow-lift"
       >
         <div className="flex items-center gap-2.5 border-b border-rule px-4">
           <Search size={16} className="text-ink-3" />
@@ -104,8 +114,8 @@ export function CommandPalette({
             );
           })}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

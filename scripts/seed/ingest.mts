@@ -28,8 +28,8 @@ for (const m of MEETINGS as { slug: string; title: string; started_at: string }[
   if (error) throw error;
 
   const [row] = await sql<{ id: string }[]>`
-    insert into meetings (title, started_at, source, media_path, media_mime, idempotency_key)
-    values (${m.title}, ${m.started_at}, 'seed', ${key}, 'audio/mpeg', ${'seed:' + m.slug})
+    insert into meetings (title, started_at, source, media_path, media_mime, idempotency_key, workspace_id)
+    values (${m.title}, ${m.started_at}, 'seed', ${key}, 'audio/mpeg', ${'seed:' + m.slug}, '00000000-0000-4000-8000-00000000de30')
     on conflict (idempotency_key) do update
       set title = excluded.title, started_at = excluded.started_at, media_path = excluded.media_path
     returning id`;

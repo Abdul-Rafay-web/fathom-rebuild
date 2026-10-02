@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { body, error, json } from '@/lib/api';
 import { rateLimit } from '@/lib/ratelimit';
 import { generateJSON, MODELS } from '@/lib/ai/gemini';
+import { getViewer } from '@/lib/auth';
 
 export const maxDuration = 30;
 
@@ -24,6 +25,7 @@ const Out = z.object({
 export async function POST(req: Request) {
   const b = await body(req, In);
   if (b instanceof Response) return b;
+  if (!(await getViewer()).user) return error('Sign in to record', 401);
   if (!(await rateLimit('live-insights', 60, 600))) return error('slow down', 429);
   try {
     const { data } = await generateJSON({

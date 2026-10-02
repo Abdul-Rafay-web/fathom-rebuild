@@ -23,8 +23,8 @@ export function balance(shares: number[]) {
 }
 
 export function Dynamics({
-  stats, speakers, onRename, onPlay,
-}: { stats: MeetingStats | null; speakers: SpeakerRow[]; onRename: (id: string, name: string) => void; onPlay: (ms: number) => void }) {
+  stats, speakers, onRename, onPlay, canEdit, onReadOnly,
+}: { stats: MeetingStats | null; speakers: SpeakerRow[]; onRename: (id: string, name: string) => void; onPlay: (ms: number) => void; canEdit: boolean; onReadOnly: () => void }) {
   if (!stats) return <Empty title="Conversation stats aren’t ready yet" />;
   const byLabel = new Map(speakers.map((s) => [s.label, s]));
   const sorted = [...speakers].sort((a, b) => b.talk_ms - a.talk_ms);
@@ -47,7 +47,7 @@ export function Dynamics({
         <ul className="space-y-3">
           {sorted.map((s) => (
             <li key={s.id} className="grid grid-cols-[minmax(130px,190px)_1fr_auto] items-center gap-4">
-              <SpeakerName s={s} onRename={onRename} />
+              <SpeakerName s={s} onRename={onRename} canEdit={canEdit} onReadOnly={onReadOnly} />
               <div className="h-2 overflow-hidden rounded-full bg-paper-2">
                 <div className="h-full rounded-full" style={{ width: `${(s.talk_ms / max) * 100}%`, background: s.color }} />
               </div>
@@ -118,19 +118,20 @@ function Stat({ label, value, note }: { label: string; value: string; note: stri
   return (
     <div className="rounded-xl border border-rule bg-card px-4 py-3.5">
       <div className="text-[11px] tracking-[0.08em] text-ink-3 uppercase">{label}</div>
-      <div className="mt-1 font-serif text-[28px] leading-none tnum">{value}</div>
+      <div className="mt-1 font-display text-[28px] leading-none tnum">{value}</div>
       <div className="mt-1.5 truncate text-[12px] text-ink-3">{note}</div>
     </div>
   );
 }
 
-function SpeakerName({ s, onRename }: { s: SpeakerRow; onRename: (id: string, name: string) => void }) {
+function SpeakerName({ s, onRename, canEdit, onReadOnly }: { s: SpeakerRow; onRename: (id: string, name: string) => void; canEdit: boolean; onReadOnly: () => void }) {
   const [editing, setEditing] = useState(false);
   const [v, setV] = useState(s.display_name);
   const save = async () => {
     const name = v.trim();
     setEditing(false);
     if (!name || name === s.display_name) return setV(s.display_name);
+    if (!canEdit) { onRename(s.id, name); return onReadOnly(); }
     const r = await fetch(`/api/speakers/${s.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
     if (r.ok) { onRename(s.id, name); toast(`Renamed to ${name} everywhere`); }
     else { setV(s.display_name); toast('Couldn’t rename', 'error'); }

@@ -7,6 +7,7 @@ import { clock, duration } from '@/lib/format';
 import type { SpeakerRow, Utterance } from '@/lib/queries';
 import { PlayerStore, usePlayer } from './meeting/player';
 import { AvatarStack, cx } from './ui';
+import { Wordmark } from './Logo';
 
 type Clip = { title: string; start_ms: number; end_ms: number; meeting_title: string; started_at: string; views: number; media_mime: string | null };
 
@@ -31,7 +32,7 @@ export function ClipView({ clip, speakers, utterances, mediaUrl }: { clip: Clip;
   return (
     <div className="min-h-screen">
       <header className="mx-auto flex max-w-[760px] items-center justify-between px-5 pt-6">
-        <Link href="/" className="font-serif text-[20px]">Afterword<span className="text-mark">.</span></Link>
+        <Link href="/" aria-label="Afterword"><Wordmark size={20} /></Link>
         <span className="text-[12px] text-ink-3">Shared clip · no sign-in needed</span>
       </header>
 
@@ -39,7 +40,7 @@ export function ClipView({ clip, speakers, utterances, mediaUrl }: { clip: Clip;
         <p className="text-[12.5px] text-ink-3">
           From <span className="text-ink-2">{clip.meeting_title}</span> · {new Date(clip.started_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · at {clock(clip.start_ms)}
         </p>
-        <h1 className="mt-2 font-serif text-[34px] leading-[1.15] tracking-[-0.015em] text-balance sm:text-[42px]">{clip.title}</h1>
+        <h1 className="mt-2 font-display text-[34px] leading-[1.15] tracking-[-0.015em] text-balance sm:text-[42px]">{clip.title}</h1>
 
         <div className="mt-8 rounded-2xl border border-rule bg-card p-5 shadow-lift">
           {isVideo ? (

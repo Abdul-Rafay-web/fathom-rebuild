@@ -1,6 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import { FileAudio, UploadCloud, X } from 'lucide-react';
 import { uploadRecording } from '@/lib/upload-client';
 import { Button, cx } from '../ui';
@@ -43,11 +44,25 @@ export function UploadDialog({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/25 px-4 backdrop-blur-[2px]" onMouseDown={() => progress === null && onClose()}>
-      <div role="dialog" aria-label="Upload a recording" onMouseDown={(e) => e.stopPropagation()} className="w-full max-w-[480px] rounded-2xl border border-rule bg-card p-6 shadow-lift">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: { duration: 0.12 } }}
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-rail/40 px-4 backdrop-blur-[3px]"
+      onMouseDown={() => progress === null && onClose()}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 12, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 8, scale: 0.98, transition: { duration: 0.12 } }}
+        role="dialog"
+        aria-label="Upload a recording"
+        onMouseDown={(e) => e.stopPropagation()}
+        className="w-full max-w-[500px] rounded-2xl border border-rule bg-card p-7 shadow-lift"
+      >
         <div className="mb-5 flex items-start justify-between">
           <div>
-            <h2 className="font-serif text-[24px] leading-tight">Upload a recording</h2>
+            <h2 className="text-[26px] leading-tight">Upload a recording</h2>
             <p className="mt-1 text-[13px] text-ink-3">Audio or video up to 50 MB. We’ll transcribe it, work out who said what, and write grounded notes.</p>
           </div>
           <button onClick={onClose} aria-label="Close" className="rounded-md p-1 text-ink-3 hover:text-ink"><X size={18} /></button>
@@ -107,7 +122,7 @@ export function UploadDialog({ onClose }: { onClose: () => void }) {
             <Button variant="primary" disabled={!file} onClick={start}>Upload & process</Button>
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

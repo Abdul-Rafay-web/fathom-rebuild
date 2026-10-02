@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { sql } from '@/lib/db';
 import { body, error, isUuid, json } from '@/lib/api';
+import { forbidden, meetingAccess } from '@/lib/auth';
 
 const Patch = z.object({
   version: z.number().int(),
@@ -16,6 +17,10 @@ const Patch = z.object({
 export async function PATCH(req: Request, ctx: RouteContext<'/api/action-items/[id]'>) {
   const { id } = await ctx.params;
   if (!isUuid(id)) return error('not found', 404);
+  const [a] = await sql<{ meeting_id: string }[]>`select meeting_id from action_items where id = ${id}`;
+  if (!a) return error('not found', 404);
+  const { access } = await meetingAccess(a.meeting_id);
+  if (access !== 'write') return forbidden(access);
   const b = await body(req, Patch);
   if (b instanceof Response) return b;
   const [row] = await sql`

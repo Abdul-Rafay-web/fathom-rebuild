@@ -58,7 +58,7 @@ export function SearchView({ initialQ, initialAsk }: { initialQ: string; initial
   return (
     <div className="mx-auto max-w-[860px] px-5 pt-10 pb-24 sm:px-8 lg:pt-14">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <h1 className="font-serif text-[40px] leading-none tracking-[-0.015em]">{mode === 'search' ? 'Search' : 'Ask'}</h1>
+        <h1 className="text-[46px] leading-[1.02] sm:text-[56px]">{mode === 'search' ? 'Search' : 'Ask'}</h1>
         <Segmented value={mode} onChange={setMode} options={[{ value: 'search', label: 'Find moments' }, { value: 'ask', label: 'Ask a question' }]} />
       </div>
 
@@ -106,7 +106,7 @@ export function SearchView({ initialQ, initialAsk }: { initialQ: string; initial
             {groups.map((g) => (
               <section key={g.id}>
                 <h2 className="mb-3 flex items-baseline gap-3 border-b border-rule pb-2">
-                  <Link href={`/m/${g.id}`} className="font-serif text-[20px] hover:text-accent-ink">{g.title}</Link>
+                  <Link href={`/m/${g.id}`} className="font-display text-[20px] hover:text-accent-ink">{g.title}</Link>
                   <span className="text-[12px] text-ink-3">{new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                 </h2>
                 <ul className="space-y-1">

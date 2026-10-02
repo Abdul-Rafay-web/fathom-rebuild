@@ -1,11 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import { ArrowLeft, Bookmark, Check, Copy, Link2, Pause, Play, RotateCcw, RotateCw, Scissors, X } from 'lucide-react';
 import { lastStartAtOrBefore } from '@/lib/algo/bsearch';
 import { clock, duration as fmtDuration } from '@/lib/format';
 import type { ActionItem, Clip, Highlight, MeetingData, SpeakerRow } from '@/lib/queries';
 import { AskBox } from '../AskBox';
+import { demoNotice, useViewer } from '../shell/AppShell';
 import { toast } from '../toast';
 import { Avatar, AvatarStack, Button, cx, Kbd } from '../ui';
 import { Dynamics } from './Dynamics';
@@ -17,8 +19,10 @@ import { Transcript, type TranscriptHandle } from './Transcript';
 
 type Tab = 'notes' | 'dynamics' | 'ask';
 
-export function Workspace({ data, mediaUrl, initialT }: { data: MeetingData; mediaUrl: string | null; initialT: number | null }) {
+export function Workspace({ data, mediaUrl, initialT, canEdit }: { data: MeetingData; mediaUrl: string | null; initialT: number | null; canEdit: boolean }) {
   const { meeting } = data;
+  const viewer = useViewer();
+  const signedIn = !!viewer.user;
   const dur = Math.max(meeting.duration_ms, data.utterances.at(-1)?.end_ms ?? 0, 1);
   const [store] = useState(() => new PlayerStore(dur));
   const [speakers, setSpeakers] = useState<SpeakerRow[]>(data.speakers);
@@ -58,17 +62,23 @@ export function Workspace({ data, mediaUrl, initialT }: { data: MeetingData; med
   const addHighlight = useCallback(async () => {
     const t = store.time;
     const h = { start_ms: Math.max(0, t - 12_000), end_ms: Math.max(t, 1000) };
+    if (!canEdit) {
+      // Read-only (demo): keep the highlight in this tab so the feature still demos.
+      setHighlights((xs) => [...xs, { id: `local-${t}`, ...h, note: null, created_live: false }].sort((a, b) => a.start_ms - b.start_ms));
+      demoNotice(signedIn);
+      return;
+    }
     const r = await fetch('/api/highlights', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ meetingId: meeting.id, ...h }) });
     if (!r.ok) return toast('Couldn’t save highlight', 'error');
     const row: Highlight = await r.json();
     setHighlights((xs) => [...xs, row].sort((a, b) => a.start_ms - b.start_ms));
     toast(`Highlighted ${clock(h.start_ms)}–${clock(h.end_ms)}`);
-  }, [meeting.id, store]);
+  }, [meeting.id, store, canEdit, signedIn]);
 
   const deleteHighlight = useCallback(async (id: string) => {
     setHighlights((xs) => xs.filter((h) => h.id !== id));
-    await fetch(`/api/highlights/${id}`, { method: 'DELETE' });
-  }, []);
+    if (canEdit && !id.startsWith('local-')) await fetch(`/api/highlights/${id}`, { method: 'DELETE' });
+  }, [canEdit]);
 
   // Keyboard: the player is the document's primary object.
   useEffect(() => {
@@ -128,7 +138,7 @@ export function Workspace({ data, mediaUrl, initialT }: { data: MeetingData; med
         <Link href="/" className="mb-6 inline-flex items-center gap-1.5 text-[12.5px] text-ink-3 hover:text-ink">
           <ArrowLeft size={13} /> Meetings
         </Link>
-        <EditableTitle id={meeting.id} initial={meeting.title} />
+        <EditableTitle id={meeting.id} initial={meeting.title} canEdit={canEdit} onReadOnly={() => demoNotice(signedIn)} />
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-ink-3 tnum">
           <span>{started.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} · {started.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
           <span>{fmtDuration(dur)}</span>
@@ -143,9 +153,10 @@ export function Workspace({ data, mediaUrl, initialT }: { data: MeetingData; med
                 <button
                   key={t}
                   onClick={() => setTab(t)}
-                  className={cx('rounded-lg px-3 py-1.5 text-[13.5px] capitalize transition-colors', tab === t ? 'bg-card text-ink shadow-[0_1px_2px_rgb(0_0_0/0.06)]' : 'text-ink-3 hover:text-ink')}
+                  className={cx('relative rounded-lg px-3.5 py-1.5 text-[13.5px] transition-colors', tab === t ? 'text-ink' : 'text-ink-3 hover:text-ink')}
                 >
-                  {t === 'dynamics' ? 'Dynamics' : t === 'ask' ? 'Ask' : 'Notes'}
+                  {tab === t && <motion.span layoutId="meeting-tab" className="absolute inset-0 rounded-lg bg-card shadow-[0_1px_3px_rgb(0_0_0/0.08)] ring-1 ring-rule" />}
+                  <span className="relative">{t === 'dynamics' ? 'Dynamics' : t === 'ask' ? 'Ask' : 'Notes'}</span>
                 </button>
               ))}
             </div>
@@ -162,6 +173,8 @@ export function Workspace({ data, mediaUrl, initialT }: { data: MeetingData; med
             decisions={data.decisions}
             actions={actions}
             setActions={setActions}
+            canEdit={canEdit}
+            onReadOnly={() => demoNotice(signedIn)}
             highlights={highlights}
             onDeleteHighlight={deleteHighlight}
             speakers={speakerMap}
@@ -169,7 +182,7 @@ export function Workspace({ data, mediaUrl, initialT }: { data: MeetingData; med
             onPlay={play}
           />
         ) : tab === 'dynamics' ? (
-          <Dynamics stats={meeting.stats} speakers={speakers} onRename={rename} onPlay={play} />
+          <Dynamics stats={meeting.stats} speakers={speakers} onRename={rename} onPlay={play} canEdit={canEdit} onReadOnly={() => demoNotice(signedIn)} />
         ) : (
           <AskBox
             meetingId={meeting.id}
@@ -306,7 +319,7 @@ function Controls({
   );
 }
 
-function EditableTitle({ id, initial }: { id: string; initial: string }) {
+function EditableTitle({ id, initial, canEdit, onReadOnly }: { id: string; initial: string; canEdit: boolean; onReadOnly: () => void }) {
   const [title, setTitle] = useState(initial);
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -315,6 +328,7 @@ function EditableTitle({ id, initial }: { id: string; initial: string }) {
     const t = v.trim();
     if (!t || t === initial) return setTitle(initial);
     setTitle(t);
+    if (!canEdit) return onReadOnly();
     const r = await fetch(`/api/meetings/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: t }) });
     if (r.ok) { setSaved(true); setTimeout(() => setSaved(false), 1500); }
   };
@@ -324,10 +338,10 @@ function EditableTitle({ id, initial }: { id: string; initial: string }) {
       defaultValue={title}
       onBlur={(e) => save(e.target.value)}
       onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setEditing(false); }}
-      className="w-full rounded-lg bg-card px-2 py-1 -mx-2 font-serif text-[38px] leading-tight tracking-[-0.015em] outline-none ring-1 ring-rule-2"
+      className="w-full rounded-lg bg-card px-2 py-1 -mx-2 font-display text-[38px] leading-tight tracking-[-0.015em] outline-none ring-1 ring-rule-2"
     />
   ) : (
-    <h1 onClick={() => setEditing(true)} title="Click to rename" className="cursor-text font-serif text-[34px] leading-[1.12] tracking-[-0.015em] text-balance sm:text-[40px]">
+    <h1 onClick={() => setEditing(true)} title="Click to rename" className="cursor-text font-display text-[34px] leading-[1.12] tracking-[-0.015em] text-balance sm:text-[40px]">
       {title}
       {saved && <Check size={18} className="ml-2 inline text-ok" />}
     </h1>

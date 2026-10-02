@@ -44,7 +44,7 @@ export function Processing({ meetingId, status, error, jobs: initial }: { meetin
 
   return (
     <div className="mt-10 max-w-[520px]">
-      <h2 className="font-serif text-[24px]">{st === 'failed' ? 'Processing hit a problem' : st === 'recording' ? 'Waiting for the upload' : 'Working on your notes'}</h2>
+      <h2 className="font-display text-[24px]">{st === 'failed' ? 'Processing hit a problem' : st === 'recording' ? 'Waiting for the upload' : 'Working on your notes'}</h2>
       <p className="mt-1.5 text-[13.5px] text-ink-3">
         {st === 'failed'
           ? 'One step failed after several retries. The details are below.'

@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { sql } from './db';
 import type { MeetingStats } from './algo/intervals';
 import type { GroundedSummary } from './pipeline/steps';
@@ -11,7 +12,7 @@ export type MeetingListItem = {
   speakers: { label: number; name: string; color: string; talk_ms: number }[];
 };
 
-export async function listMeetings(): Promise<MeetingListItem[]> {
+export async function listMeetings(workspaceId: string): Promise<MeetingListItem[]> {
   return sql<MeetingListItem[]>`
     select m.id, m.title, m.started_at, m.duration_ms, m.status, m.source, m.gist, m.speaker_count,
            m.stats->'fingerprint' as fingerprint,
@@ -20,8 +21,9 @@ export async function listMeetings(): Promise<MeetingListItem[]> {
                                       order by s.talk_ms desc)
                      from speakers s where s.meeting_id = m.id), '[]') as speakers
     from meetings m
-    -- An upload that never completed (tab closed mid-upload) isn't a meeting.
-    where not (m.status = 'recording' and m.created_at < now() - interval '30 minutes')
+    where m.workspace_id = ${workspaceId}
+      -- An upload that never completed (tab closed mid-upload) isn't a meeting.
+      and not (m.status = 'recording' and m.created_at < now() - interval '30 minutes')
     order by m.started_at desc`;
 }
 
@@ -37,7 +39,8 @@ export type InsightContent = GroundedSummary & {
   grounding?: { dropped: number };
 };
 
-export async function getMeeting(id: string) {
+/** Memoized per request: the page and its metadata share one set of reads. */
+export const getMeeting = cache(async function getMeeting(id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const [meeting] = await sql<{
     id: string; title: string; started_at: Date; duration_ms: number; status: string; source: string;
@@ -57,17 +60,18 @@ export async function getMeeting(id: string) {
     sql<JobRow[]>`select step, status, attempts, duration_ms, error from jobs where meeting_id = ${id} order by id`,
   ]);
   return { meeting, speakers, utterances: utterances.map((u) => ({ ...u, id: Number(u.id) })), insight: insight[0] ?? null, decisions, actions, highlights, clips, jobs };
-}
+});
 export type MeetingData = NonNullable<Awaited<ReturnType<typeof getMeeting>>>;
 
 export type InboxItem = ActionItem & { meeting_title: string; started_at: Date; owner_color: string | null };
-export async function listActionItems(): Promise<InboxItem[]> {
+export async function listActionItems(workspaceId: string): Promise<InboxItem[]> {
   return sql<InboxItem[]>`
     select a.id, a.meeting_id, a.owner_name, a.owner_speaker_id, a.text, a.due, a.source_ms, a.quote, a.done, a.version,
            m.title as meeting_title, m.started_at, s.color as owner_color
     from action_items a
     join meetings m on m.id = a.meeting_id
     left join speakers s on s.id = a.owner_speaker_id
+    where m.workspace_id = ${workspaceId}
     order by a.done, m.started_at desc, a.source_ms`;
 }
 
