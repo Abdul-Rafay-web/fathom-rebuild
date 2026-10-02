@@ -36,13 +36,17 @@ export async function ask(question: string, meetingId?: string): Promise<AskResu
     temperature: 0.1,
   });
 
+  // Normalize grouped citations ("[S6, S8]", "[S6,8]") into individual ones.
+  const text = data.answer.replace(/\[(S?\d+(?:\s*[,;]\s*S?\d+)+)\]/g, (_, inner: string) =>
+    inner.split(/[,;]/).map((x) => `[S${x.trim().replace(/^S/, '')}]`).join(''),
+  );
   // Keep only citations that refer to retrieved sources; strip any others from the text.
   const valid = new Set(data.cited.filter((n) => n >= 1 && n <= hits.length));
-  for (const m of data.answer.matchAll(/\[S(\d+)\]/g)) {
+  for (const m of text.matchAll(/\[S(\d+)\]/g)) {
     const n = Number(m[1]);
     if (n >= 1 && n <= hits.length) valid.add(n);
   }
-  const answer = data.answer.replace(/\[S(\d+)\]/g, (s, n) => (valid.has(Number(n)) ? s : ''));
+  const answer = text.replace(/\[S(\d+)\]/g, (s, n) => (valid.has(Number(n)) ? s : ''));
   return {
     answer,
     answerable: data.answerable,

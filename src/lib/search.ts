@@ -13,6 +13,11 @@ import { embed, toPgVector } from './ai/gemini';
 
 const RRF_K = 60;
 const CANDIDATES = 40;
+// Cosine-distance cut-off for the semantic arm, calibrated on this corpus:
+// relevant queries' best matches sit at 0.29–0.41, unrelated queries ("banana
+// bread recipe") never get below 0.475. Without it, vector search always returns
+// its top-k, however irrelevant.
+const MAX_DISTANCE = 0.43;
 
 export type Hit = {
   chunk_id: number;
@@ -67,6 +72,7 @@ export async function hybridSearch(q: string, opts: { meetingId?: string; limit?
       ${vec
         ? sql`select c.id, row_number() over (order by c.embedding <=> ${vec}::vector) as r
               from chunks c where c.embedding is not null ${scope}
+                and (c.embedding <=> ${vec}::vector) < ${MAX_DISTANCE}
               order by c.embedding <=> ${vec}::vector
               limit ${CANDIDATES}`
         : sql`select null::bigint as id, null::bigint as r where false`}
