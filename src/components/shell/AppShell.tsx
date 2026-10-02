@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { CheckSquare, Library, Menu, Mic, Moon, Search, Sun, Upload, X } from 'lucide-react';
 import { cx, Kbd } from '../ui';
 import { Toaster } from '../toast';
@@ -34,8 +34,6 @@ export function AppShell({ children, meetings, openActions }: { children: ReactN
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  useEffect(() => setMobileNav(false), [path]);
-
   const nav = (
     <nav className="flex flex-col gap-0.5">
       {NAV.map(({ href, label, icon: Icon, match }) => {
@@ -44,6 +42,7 @@ export function AppShell({ children, meetings, openActions }: { children: ReactN
           <Link
             key={href}
             href={href}
+            onClick={() => setMobileNav(false)}
             className={cx(
               'group flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13.5px] transition-colors',
               active ? 'bg-card text-ink shadow-[0_1px_2px_rgb(0_0_0/0.05)]' : 'text-ink-2 hover:bg-paper-2 hover:text-ink',
@@ -117,8 +116,9 @@ export function AppShell({ children, meetings, openActions }: { children: ReactN
 
       <main className="min-w-0 flex-1 pt-14 lg:pt-0">{children}</main>
 
-      <CommandPalette open={palette} onClose={() => setPalette(false)} meetings={meetings} onUpload={() => { setPalette(false); setUpload(true); }} />
-      <UploadDialog open={upload} onClose={() => setUpload(false)} />
+      {/* Mounted only while open, so each opening starts from fresh state. */}
+      {palette && <CommandPalette onClose={() => setPalette(false)} meetings={meetings} onUpload={() => { setPalette(false); setUpload(true); }} />}
+      {upload && <UploadDialog onClose={() => setUpload(false)} />}
       <Toaster />
     </div>
   );
@@ -132,17 +132,28 @@ function Wordmark() {
   );
 }
 
+// The theme lives on <html data-theme> (set before paint by a script in the
+// root layout) or falls back to the OS preference. Read it as an external store.
+const themeListeners = new Set<() => void>();
+function subscribeTheme(fn: () => void) {
+  themeListeners.add(fn);
+  const mq = matchMedia('(prefers-color-scheme: dark)');
+  mq.addEventListener('change', fn);
+  return () => { themeListeners.delete(fn); mq.removeEventListener('change', fn); };
+}
+function currentTheme(): 'light' | 'dark' {
+  const t = document.documentElement.dataset.theme;
+  if (t === 'light' || t === 'dark') return t;
+  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 function Footer() {
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
-  useEffect(() => {
-    const t = document.documentElement.dataset.theme as 'light' | 'dark' | undefined;
-    setTheme(t ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-  }, []);
+  const theme = useSyncExternalStore(subscribeTheme, currentTheme, () => null);
   const flip = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
     try { localStorage.setItem('aw-theme', next); } catch {}
-    setTheme(next);
+    themeListeners.forEach((fn) => fn());
   };
   return (
     <div className="flex items-center justify-between border-t border-rule px-1.5 pt-3 text-[12px] text-ink-3">

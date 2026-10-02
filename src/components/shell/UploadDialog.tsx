@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { FileAudio, UploadCloud, X } from 'lucide-react';
 import { uploadRecording } from '@/lib/upload-client';
 import { Button, cx } from '../ui';
@@ -8,7 +8,7 @@ import { toast } from '../toast';
 
 const MAX = 50 * 1024 * 1024;
 
-export function UploadDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function UploadDialog({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -17,12 +17,6 @@ export function UploadDialog({ open, onClose }: { open: boolean; onClose: () => 
   const [drag, setDrag] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const abort = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    if (!open) { setFile(null); setTitle(''); setProgress(null); setErr(null); }
-  }, [open]);
-
-  if (!open) return null;
 
   const pick = (f: File | undefined | null) => {
     if (!f) return;

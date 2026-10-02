@@ -19,8 +19,7 @@ export function Processing({ meetingId, status, error, jobs: initial }: { meetin
   const [jobs, setJobs] = useState(initial);
   const [st, setSt] = useState(status);
   const [err, setErr] = useState(error);
-  const [t0] = useState(() => Date.now());
-  const [, tick] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -36,12 +35,12 @@ export function Processing({ meetingId, status, error, jobs: initial }: { meetin
     };
     poll();
     const id = setInterval(poll, 2500);
-    const clock = setInterval(() => tick((x) => x + 1), 1000);
+    const t0 = Date.now();
+    const clock = setInterval(() => setElapsed(Math.round((Date.now() - t0) / 1000)), 1000);
     return () => { alive = false; clearInterval(id); clearInterval(clock); };
   }, [meetingId, router]);
 
   const byStep = new Map(jobs.map((j) => [j.step, j]));
-  const elapsed = Math.round((Date.now() - t0) / 1000);
 
   return (
     <div className="mt-10 max-w-[520px]">

@@ -1,0 +1,218 @@
+{
+ "slug": "maya-priya-1on1",
+ "title": "Maya / Priya 1:1",
+ "truth": {
+  "decisions": {
+   "d1": "Priya will lead product for the enterprise push starting in January."
+  },
+  "actions": {
+   "a1": {
+    "owner": "Maya Chen",
+    "text": "Ask Sofia to own customer communication for the pricing change",
+    "due": "this week"
+   },
+   "a2": {
+    "owner": "Priya Raman",
+    "text": "Draft a one-page enterprise product plan",
+    "due": "end of October"
+   }
+  }
+ },
+ "lines": [
+  {
+   "speaker": "Maya Chen",
+   "text": "Morning, Priya. Let us dive right in. How are you holding up after the sprint planning yesterday?",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Morning, Maya. I am doing well, actually. Relieved, mostly. The phased offline plan really landed well with the engineering team.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "That is fantastic news. I know we spent weeks refining the architecture for the basement and rural sync issues. Glad to hear the team is on board.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Yeah, breaking it into three distinct phases made all the difference. Phase one tackles local caching for the dispatchers, phase two handles conflict resolution for offline edits, and phase three is the background sync optimization. Once they saw it laid out like that, the pushback completely stopped.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "It is a massive win for us. Our 46 customers are going to feel that reliability immediately, especially the ones with technicians working in deep basements.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Totally. It directly protects our 2.1 million ARR baseline because churn right now is heavily tied to sync failures in rural areas.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "Spot on. Now, let us talk about your bandwidth. I have been looking at your plate, and I am slightly worried you are juggling too many distinct workstreams right now.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "I appreciate you bringing that up, Maya. I have been feeling quite stretched lately between the pricing tier updates, the new customer onboarding flow overhaul, and the offline sync scoping.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "You cannot do all three at peak quality without burning out, and I refuse to let that happen to you. Which piece is taking the heaviest toll?",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Definitely the pricing analysis follow-up. Collecting all the competitor data from the field-service SaaS landscape and running the margin models takes hours of deep focus that I simply do not have right now.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "Then let us take that off your plate immediately. Who should we hand the pricing analysis follow-up to?",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Sofia would be perfect for it. She understands the customer feedback side inside and out.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "I agree. Let us make that happen. I will ask Sofia to own customer communication for the pricing change, due this week.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "That would be a huge relief for me. Thank you, Maya.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "You are welcome. But let us also look at how we got here. I want to give you some direct feedback on scope management.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "I am ready. Hit me.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "I need you to push back earlier when scope starts creeping. Last week with the onboarding flow, you absorbed three extra feature requests from sales without looping me in to protect your timeline.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "You are right. I caught myself trying to be a pleaser because I wanted to close those enterprise deals in the pipeline.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "I love the ambition, but protecting your focus protects the product. If we fail on offline reliability, those enterprise deals will churn anyway.",
+   "overlap": true
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Message received loud and clear. Next time, I will push back on sales and bring the trade-offs directly to you before agreeing to anything new.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "That is all I ask. Now, let us pivot to your career growth and what you want out of next year.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "I have been thinking about this a lot. As Tidewater scales past thirty people and looks toward larger accounts, I really want to lead the product side of the enterprise push.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "Talk to me about why you feel ready for that transition.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Because I have spent the last year understanding every quirk of our current user base, from the solo dispatcher to the multi-truck regional operations manager. Enterprise needs stricter security, better role-based permissions, and robust reporting, and I have mapped out how our architecture can support that.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "It is a logical step up, and frankly, we need a dedicated product owner for enterprise if we want to hit our ARR goals for next year.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "I am fully prepared to step up and own those requirements.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "Let us make it official. Priya will lead product for the enterprise push starting in January.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Thank you, Maya. I am genuinely excited for this.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "You earned it. To kick off preparation for January, what do you think our first milestone should be?",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "We need a cohesive strategy document outlining the exact feature gaps between our current tier and what enterprise buyers demand.",
+   "overlap": true
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "Exactly. Let us put a deadline on that so we keep momentum.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "I will draft a one-page enterprise product plan, due end of October.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "End of October works perfectly. That gives us November to review it and December to align engineering before the January kickoff.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "It gives us a very clear runway.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "Before we wrap up, is there anything else blocking your day-to-day right now?",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Just getting the updated design assets from the UI team for the offline sync indicator, but I am meeting with them this afternoon to lock that down.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "Great. Ping me if they give you any pushback on the timeline.",
+   "overlap": false
+  },
+  {
+   "speaker": "Priya Raman",
+   "text": "Will do. Thanks for the guidance today, Maya.",
+   "overlap": false
+  },
+  {
+   "speaker": "Maya Chen",
+   "text": "Anytime, Priya. Let us crush the rest of the week.",
+   "overlap": false
+  }
+ ]
+}

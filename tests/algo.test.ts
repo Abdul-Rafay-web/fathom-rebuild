@@ -4,6 +4,8 @@ import { computeStats, mergeIntervals } from '../src/lib/algo/intervals';
 import { Grounder } from '../src/lib/algo/align';
 import { chunkUtterances } from '../src/lib/algo/chunk';
 import { lastStartAtOrBefore } from '../src/lib/algo/bsearch';
+import { fingerprint } from '../src/lib/algo/intervals';
+import { fuzzy } from '../src/lib/fuzzy';
 
 test('mergeIntervals merges overlaps and respects gap', () => {
   const m = mergeIntervals([{ start_ms: 5, end_ms: 10 }, { start_ms: 0, end_ms: 6 }, { start_ms: 12, end_ms: 14 }]);
@@ -102,7 +104,6 @@ test('computeStats: serialized cut-in on an unfinished sentence counts as an int
 });
 
 test('fingerprint: dominant speaker per slice, silence as -1', () => {
-  const { fingerprint } = require('../src/lib/algo/intervals');
   const fp = fingerprint(
     [
       { start_ms: 0, end_ms: 2_000, speaker: 0 },
@@ -116,7 +117,6 @@ test('fingerprint: dominant speaker per slice, silence as -1', () => {
 });
 
 test('fuzzy: subsequence match, word starts and runs rank higher', () => {
-  const { fuzzy } = require('../src/lib/fuzzy');
   assert.equal(fuzzy('xyz', 'Q4 planning'), null);
   const a = fuzzy('qp', 'Q4 planning')!;
   assert.deepEqual(a.indices, [0, 3]); // both word starts

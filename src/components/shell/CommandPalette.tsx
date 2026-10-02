@@ -9,21 +9,13 @@ import type { PaletteMeeting } from './AppShell';
 type Item = { id: string; label: string; hint?: string; icon: ReactNode; run: () => void; group: string };
 
 export function CommandPalette({
-  open, onClose, meetings, onUpload,
-}: { open: boolean; onClose: () => void; meetings: PaletteMeeting[]; onUpload: () => void }) {
+  onClose, meetings, onUpload,
+}: { onClose: () => void; meetings: PaletteMeeting[]; onUpload: () => void }) {
   const router = useRouter();
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
   const input = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (open) {
-      setQ('');
-      setSel(0);
-      requestAnimationFrame(() => input.current?.focus());
-    }
-  }, [open]);
 
   const items = useMemo(() => {
     const go = (href: string) => () => { onClose(); router.push(href); };
@@ -58,12 +50,9 @@ export function CommandPalette({
     return ranked;
   }, [q, meetings, onClose, onUpload, router]);
 
-  useEffect(() => setSel(0), [q]);
   useEffect(() => {
     list.current?.querySelector(`[data-i="${sel}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [sel]);
-
-  if (!open) return null;
 
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') { e.preventDefault(); setSel((s) => Math.min(s + 1, items.length - 1)); }
@@ -72,7 +61,6 @@ export function CommandPalette({
     else if (e.key === 'Escape') onClose();
   };
 
-  let lastGroup = '';
   return (
     <div className="fixed inset-0 z-[90] flex items-start justify-center bg-ink/25 px-4 pt-[12vh] backdrop-blur-[2px]" onMouseDown={onClose}>
       <div
@@ -86,7 +74,8 @@ export function CommandPalette({
           <input
             ref={input}
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => { setQ(e.target.value); setSel(0); }}
+            autoFocus
             onKeyDown={onKey}
             placeholder="Jump to a meeting, or search what was said…"
             className="h-12 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-3"
@@ -96,7 +85,7 @@ export function CommandPalette({
         <div ref={list} className="max-h-[52vh] overflow-y-auto p-1.5">
           {items.length === 0 && <p className="px-3 py-6 text-center text-[13px] text-ink-3">Nothing matches.</p>}
           {items.map((it, i) => {
-            const header = it.group !== lastGroup ? (lastGroup = it.group) : null;
+            const header = i === 0 || items[i - 1].group !== it.group ? it.group : null;
             return (
               <div key={it.id}>
                 {header && <div className="px-3 pt-2.5 pb-1 text-[10.5px] tracking-[0.14em] text-ink-3 uppercase">{header}</div>}

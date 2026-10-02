@@ -27,10 +27,10 @@ export function SearchView({ initialQ, initialAsk }: { initialQ: string; initial
   useEffect(() => {
     if (mode !== 'search') return;
     const query = q.trim();
-    if (query.length < 2) { setHits(null); return; }
+    if (query.length < 2) return;
     const my = ++seq.current;
-    setBusy(true);
     const t = setTimeout(async () => {
+      setBusy(true);
       try {
         const r = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         const j = await r.json();
@@ -45,9 +45,11 @@ export function SearchView({ initialQ, initialAsk }: { initialQ: string; initial
     return () => clearTimeout(t);
   }, [q, mode, router]);
 
+  // Below 2 characters nothing is shown, whatever the last response was.
+  const shown = q.trim().length >= 2 ? hits : null;
   // Group hits by meeting, keeping rank order.
   const groups: { id: string; title: string; date: string; hits: Hit[] }[] = [];
-  for (const h of hits ?? []) {
+  for (const h of shown ?? []) {
     let g = groups.find((x) => x.id === h.meeting_id);
     if (!g) groups.push((g = { id: h.meeting_id, title: h.meeting_title, date: h.started_at, hits: [] }));
     g.hits.push(h);
@@ -85,10 +87,10 @@ export function SearchView({ initialQ, initialAsk }: { initialQ: string; initial
           </div>
           <p className="mt-2.5 text-[12px] text-ink-3">
             Hybrid search: exact keywords and meaning, fused by rank. Results are moments you can play, not just meetings.
-            {ms != null && hits && <span className="tnum"> · {hits.length} moments in {ms} ms</span>}
+            {ms != null && shown && <span className="tnum"> · {shown.length} moments in {ms} ms</span>}
           </p>
 
-          {!hits && (
+          {!shown && (
             <div className="mt-8 flex flex-wrap gap-2">
               {EXAMPLES.map((e) => (
                 <button key={e} onClick={() => setQ(e)} className="rounded-full border border-rule bg-card px-3 py-1.5 text-[12.5px] text-ink-2 hover:border-accent hover:text-ink">{e}</button>
@@ -96,7 +98,7 @@ export function SearchView({ initialQ, initialAsk }: { initialQ: string; initial
             </div>
           )}
 
-          {hits && hits.length === 0 && !busy && (
+          {shown && shown.length === 0 && !busy && (
             <p className="mt-10 text-center font-serif text-[18px] text-ink-3">Nothing matches “{q}”. Try the words people would have said.</p>
           )}
 
