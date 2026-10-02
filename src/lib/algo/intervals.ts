@@ -6,7 +6,7 @@
 // for the sweep. That matters on an 8-person hour (~1,500 utterances), and the
 // same pass gives every metric at once.
 
-export type Interval = { start_ms: number; end_ms: number; speaker: number };
+export type Interval = { start_ms: number; end_ms: number; speaker: number; text?: string };
 
 export type SpeakerStats = { talk_ms: number; turns: number; longest_ms: number };
 
@@ -22,6 +22,12 @@ export type MeetingStats = {
 const MONOLOGUE_MS = 90_000;  // one person holding the floor for 90s+
 const SAME_TURN_GAP_MS = 2_000; // a pause shorter than this doesn't end a turn
 const INTERRUPT_MIN_OVERLAP_MS = 600;
+// Diarized transcripts are serialized (one speaker at a time), so true overlap
+// rarely survives into timestamps. A cut-in is the serialized signature of an
+// interruption: the floor changes within 250 ms while the previous speaker's
+// sentence is left unfinished.
+const CUT_IN_GAP_MS = 250;
+const UNFINISHED = /[^.?!…"')\]]\s*$/;
 
 /** Merge overlapping/adjacent intervals. Input need not be sorted. */
 export function mergeIntervals<T extends { start_ms: number; end_ms: number }>(xs: T[], gap = 0) {
@@ -96,6 +102,21 @@ export function computeStats(utts: Interval[], duration_ms: number): MeetingStat
       active.add(ev.u);
     } else {
       active.delete(ev.u);
+    }
+  }
+
+  // Cut-ins over the time-ordered transcript.
+  const ordered = [...utts].sort((a, b) => a.start_ms - b.start_ms);
+  for (let i = 1; i < ordered.length; i++) {
+    const prev = ordered[i - 1], cur = ordered[i];
+    if (
+      cur.speaker !== prev.speaker &&
+      cur.start_ms - prev.end_ms < CUT_IN_GAP_MS &&
+      cur.start_ms >= prev.end_ms - INTERRUPT_MIN_OVERLAP_MS && // larger overlaps were counted by the sweep
+      prev.text != null && UNFINISHED.test(prev.text)
+    ) {
+      const k = `${cur.speaker}:${prev.speaker}`;
+      interrupts.set(k, (interrupts.get(k) ?? 0) + 1);
     }
   }
 

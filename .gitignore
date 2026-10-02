@@ -49,3 +49,7 @@ dist/
 .claude/settings.local.json
 
 !.env.example
+
+# seed media (uploaded to storage, too large for git)
+seed/.cache/
+seed/audio/

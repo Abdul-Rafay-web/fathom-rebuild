@@ -87,3 +87,16 @@ test('lastStartAtOrBefore', () => {
   assert.equal(lastStartAtOrBefore(s, 1999), 1);
   assert.equal(lastStartAtOrBefore(s, 99999), 3);
 });
+
+test('computeStats: serialized cut-in on an unfinished sentence counts as an interruption', () => {
+  const s = computeStats(
+    [
+      { start_ms: 0, end_ms: 5_000, speaker: 0, text: 'I think the real problem is that the' },
+      { start_ms: 5_100, end_ms: 8_000, speaker: 1, text: 'Sorry, can I jump in here?' },
+      { start_ms: 8_100, end_ms: 9_000, speaker: 0, text: 'Sure.' },
+      { start_ms: 9_050, end_ms: 9_900, speaker: 1, text: 'Thanks.' }, // previous ended a sentence → not a cut-in
+    ],
+    10_000,
+  );
+  assert.deepEqual(s.interruptions, [{ by: 1, of: 0, count: 1 }]);
+});
