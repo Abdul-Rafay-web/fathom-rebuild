@@ -1,6 +1,6 @@
 # Afterword
 
-**Meeting notes you can trust the day after.** A rebuild of [Fathom](https://fathom.video) for the 8x engineering assessment, built around the case the brief says matters most: *an eight-person call that runs an hour.*
+**Meeting notes you can trust the day after.** A rebuild of [Fathom](https://fathom.video)  built around the case the brief says matters most: *an eight-person call that runs an hour.*
 
 - **Live app:** https://fathom-rebuild-iota.vercel.app. Press **Try the demo account** on the sign-in page: one click, no sign-up.
 - **Repository:** https://github.com/Abdul-Rafay-web/fathom-rebuild
